@@ -23,7 +23,7 @@ export NO_AT_BRIDGE=0
 export GTK_A11Y=atspi
 unset WAYLAND_DISPLAY SWAYSOCK HYPRLAND_INSTANCE_SIGNATURE
 
-if ! systemctl --user is-active --quiet ryra-desktop.service \
+if ! systemctl --no-ask-password is-active --quiet "ryra-desktop@$(id -un).service" \
   || [[ ! -s "$XAUTHORITY" ]] \
   || ! timeout 2s xdpyinfo >/dev/null 2>&1; then
   echo 'Start your desktop with ryra desktop start before using computer control.' >&2

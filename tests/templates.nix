@@ -15,7 +15,7 @@ let
       disk = c.disko.devices.disk.main.device;
       snapshots = c.systemd.timers.ryra-snapshot-prune.enable;
       biosPartition = builtins.hasAttr "boot" c.disko.devices.disk.main.content.partitions;
-      desktop = builtins.hasAttr "ryra-desktop" c.systemd.user.services;
+      desktop = builtins.hasAttr "ryra-desktop@" c.systemd.services;
       azure = c.services.waagent.enable;
       earlyoom = c.services.earlyoom.enable;
       zram = c.zramSwap.enable;

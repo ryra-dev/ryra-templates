@@ -21,7 +21,7 @@ for name, config in configs.items():
         assert config['bootPaths'] == [{'path': '/boot-nixos', 'efiSysMountPoint': '/boot', 'devices': ['nodev']}], name
         assert config['rootFs'] == 'ext4' and config['espSize'] == '1G', name
         assert config['disk'] == '/dev/vda' and not config['snapshots'], name
-    assert config['desktop'] == (name == 'desktop'), name
+    assert config['desktop'] == (not name.startswith('lima')), name
     assert config['azure'] == (name == 'azure'), name
     assert config['earlyoom'] and config['zram'], name
     assert config['buildJobs'] == 1 and config['buildCores'] == 2, name

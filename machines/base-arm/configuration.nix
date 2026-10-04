@@ -2,6 +2,6 @@
 { ... }:
 {
   nixpkgs.hostPlatform = "aarch64-linux";
-  ryra.desktop.enable = false;
+  ryra.desktop.enable = true;
   # ryra.tailscale.enable = true; # After configuring the enrollment secret.
 }

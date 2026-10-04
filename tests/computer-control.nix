@@ -16,7 +16,7 @@ assert desktop.options.ryra.desktop.computerControl.enable.default == false;
 assert !hasDriver off;
 assert hasDriver on;
 assert on.services.gnome.at-spi2-core.enable;
-assert on.systemd.user.services.ryra-desktop.environment.NO_AT_BRIDGE == "0";
+assert on.systemd.services."ryra-desktop@".environment.NO_AT_BRIDGE == "0";
 assert on.networking.firewall.allowedTCPPorts == off.networking.firewall.allowedTCPPorts;
 assert lib.all (name: !(lib.hasInfix "cua" name)) newServices;
 # Force both complete configurations, including the real upstream package, so
