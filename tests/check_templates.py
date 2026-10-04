@@ -16,7 +16,7 @@ for name, config in configs.items():
     assert config['system'] == ('aarch64-linux' if name == 'base-arm' else 'x86_64-linux'), name
     assert set(config['grub']) == ({'nodev'} if name in ('base-arm', 'azure') else {'/dev/sda'}), name
     assert config['biosPartition'] == (name != 'base-arm'), name
-    assert config['desktop'] == (name == 'desktop'), name
+    assert config['desktop'], name
     assert config['azure'] == (name == 'azure'), name
     assert config['earlyoom'] and config['zram'], name
     assert all(p in config['packages'] for p in ('vim', 'ripgrep')), name

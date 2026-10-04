@@ -6,15 +6,20 @@ Start with `templates.default` (also named `base`) and edit `configuration.nix`:
 ```nix
 { ... }: {
   nixpkgs.hostPlatform = "x86_64-linux"; # Or aarch64-linux.
-  ryra.desktop.enable = false;
+  ryra.desktop.enable = true;
   # ryra.tailscale.enable = true; # Requires an enrollment secret.
 }
 ```
 
 For Azure, import `ryraModules.azure` in that module. The existing `base`,
-`base-arm`, `azure`, and `desktop` names remain available with their original
-architecture, platform, and desktop defaults. They all use the same modules;
+`base-arm`, `azure`, and `desktop` names retain their architecture and platform
+choices. All include the GNOME Flashback remote desktop by default. They use the same modules;
 there are no generated or separately maintained copies of the implementation.
+
+The desktop starts on demand through `ryra desktop`. Set its per-user password
+with `ryra desktop password`; the viewer is available only through the machine's
+authenticated connection. Closing the viewer leaves the session running.
+Set `ryra.desktop.enable = false` for a terminal-only machine.
 
 Each copied machine owns its hostname, `configuration.nix`, generated login and
 SOPS modules, and service settings. Its flake references this repository as the

@@ -28,7 +28,7 @@ in {
     services.gnome.at-spi2-core.enable = true;
     # A long-lived user manager may still carry the accessibility-disabled
     # environment from before this option was enabled.
-    systemd.user.services.ryra-desktop.environment = {
+    systemd.services."ryra-desktop@".environment = {
       NO_AT_BRIDGE = "0";
       GTK_A11Y = "atspi";
     };

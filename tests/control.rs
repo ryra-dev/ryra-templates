@@ -36,7 +36,8 @@ impl Machine {
             include_str!("../modules/desktop/computer-control.sh"),
         )
         .expect("computer control");
-        this.executable("id", "echo 1000");
+        this.executable("id", "if [ \"$1\" = -un ]; then echo alice; else echo 1000; fi");
+        this.executable("xprop", "echo '_NET_SUPPORTING_WM_CHECK(WINDOW): window id # 0x1'");
         this.executable("curl", "exit 0");
         this.executable("awk", "echo \"${TEST_MEMORY:-1048576}\"");
         this.executable("vncpasswd", "printf password > \"$1\"");
