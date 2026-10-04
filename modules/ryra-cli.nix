@@ -23,18 +23,18 @@
 # pkg.ryra.dev, every machine pinned to it stops building.
 { lib, pkgs, ... }:
 let
-  version = "0.1.43";
+  version = "0.1.44";
 
   # Published target triples. Keyed by system so one file serves both
   # templates rather than two copies drifting apart.
   published = {
     "x86_64-linux" = {
       arch = "x86_64-unknown-linux-musl";
-      sha256 = "1c1ec09bec0f7cc5d20db5f89e17898bd6c5e11e3b065ac8727b5940c762631a";
+      sha256 = "bae5b9c35a6861c544ae8518079e30fd30075943ad2614b3e8ffe67a329a0fce";
     };
     "aarch64-linux" = {
       arch = "aarch64-unknown-linux-musl";
-      sha256 = "97d2ffcab77c122654822f65f7c615d99fbb987cc218f1baa36bfdb9f89bfacd";
+      sha256 = "48933a8d42b4e1d76add4521e99926261eec8f8f36a154f52e9b40cb426a0805";
     };
   };
   package = published.${pkgs.stdenv.hostPlatform.system};
