@@ -3,11 +3,15 @@
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-    ryra-services.url = "github:ryanravn/ryra-services";
+    ryra-services.url = "github:ryra-dev/ryra-services";
     herdr-pkgs.url = "github:NixOS/nixpkgs/c043004d1c6985732bcc1cbc5a9c9aecbbb4e0f0";
     cua = {
       url = "github:trycua/cua/e88e9d899ac5effaeae38619527ebaa46b26ce72";
       inputs.nixpkgs.follows = "nixpkgs";
+    };
+    lima = {
+      url = "github:nixos-lima/nixos-lima/24916c8e8719298499593e94a63f26eba839711b";
+      flake = false;
     };
     disko = {
       url = "github:nix-community/disko";
@@ -21,7 +25,7 @@
 
   outputs = { self, nixpkgs, disko, sops-nix, ... }@sharedInputs:
     let
-      names = [ "base" "base-arm" "azure" "desktop" ];
+      names = [ "base" "base-arm" "azure" "desktop" "lima" "lima-intel" ];
       mkMachine = { self, inputs ? {} }:
         let
           sources = sharedInputs // inputs;
@@ -60,6 +64,14 @@
           imports = [ disko.nixosModules.disko sops-nix.nixosModules.sops ./modules/default.nix ];
         };
         azure = import ./modules/azure.nix;
+        azure-image = import ./modules/azure-image;
+        lima-boot = import ./modules/lima-boot.nix;
+        lima = {
+          imports = [
+            (sharedInputs.lima + "/lima-init.nix")
+            ./modules/lima.nix
+          ];
+        };
       };
       index = builtins.listToAttrs (map (name: {
         inherit name;
@@ -71,6 +83,11 @@
         welcomeText = meta.description;
       }) self.index) // {
         default = self.templates.base;
+        azure-image = {
+          path = ./machines/azure-image;
+          description = "Clean Azure Gen 2 NixOS image for pre-provisioned computers";
+          welcomeText = builtins.readFile ./machines/azure-image/README.md;
+        };
       };
       checks.x86_64-linux.computer-control = import ./tests/computer-control.nix {
         desktop = (mkMachine { self = ./machines/desktop; }).nixosConfigurations.machine;

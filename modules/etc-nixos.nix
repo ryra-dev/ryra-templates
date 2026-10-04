@@ -22,7 +22,7 @@
 # no network: every input is already in this machine's store, because that is what built the
 # system running now.
 #
-# WHAT HAPPENS ON THE NEXT `ryra org machines switch`: the machine is built from the TREE, this
+# WHAT HAPPENS ON THE NEXT `ryra org machines apply`: the machine is built from the TREE, this
 # runs again, and whatever was done here is replaced. That is not a flaw to design around, it is
 # what declarative means. A change worth keeping goes into the tree, into git, and gets reviewed
 # like any other. A change made here is a repair, and repairs are supposed to be temporary.

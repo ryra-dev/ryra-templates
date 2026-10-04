@@ -9,3 +9,11 @@ with your machine configuration. Generated logins, SOPS secrets and service
 settings stay in this machine's own `modules/` directory.
 
 The preset name does not bind an existing machine to future template edits.
+
+Add local settings in `modules/machine.nix` or another `.nix` file anywhere under
+`modules/`; these are imported automatically. `modules/ryra/settings.nix` is
+consumed separately by the service module. Leave the generated login and secret
+modules to Ryra.
+
+With Nix installed, `ryra design . --json` evaluates this machine locally,
+including on macOS. Read the `eval` result before deploying.

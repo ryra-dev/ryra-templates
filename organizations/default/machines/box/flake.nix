@@ -5,7 +5,7 @@
 # `follows` rather than a fork. The organization decides when it moves, in a
 # commit, with a diff.
 {
-  inputs.base.url = "github:ryanravn/ryra-templates?dir=machines/base";
+  inputs.base.url = "github:ryra-dev/ryra-templates?dir=machines/base";
 
   outputs =
     { base, ... }:

@@ -17,6 +17,8 @@
 
   # Collect unreferenced store paths during builds when space gets tight.
   nix.settings = {
+    max-jobs = lib.mkDefault 1;
+    cores = lib.mkDefault 2;
     min-free = lib.mkDefault (1024 * 1024 * 1024);
     max-free = lib.mkDefault (3 * 1024 * 1024 * 1024);
   };

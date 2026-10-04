@@ -38,8 +38,8 @@
       "ryra"
     ];
 
-  time.timeZone = "UTC";
-  i18n.defaultLocale = "en_US.UTF-8";
+  time.timeZone = lib.mkDefault "UTC";
+  i18n.defaultLocale = lib.mkDefault "en_US.UTF-8";
 
   # An editor, because a box you can only reach over ssh and cannot edit a file on is a box you
   # have to redeploy to fix a typo in. `vim` rather than a choice: it is what is on every other
@@ -68,11 +68,7 @@
     vim
   ];
 
-  # Two reasons, both standing. It moves every input, and `herdr-pkgs` is pinned
-  # to match a protocol; and a box that rebuilds itself has nobody outside to
-  # confirm it came back. `ryra org machines update` moves nixpkgs in the tree
-  # and switches from there, so the update is a commit and keeps the armed undo.
-  system.autoUpgrade.enable = false;
+  system.autoUpgrade.enable = lib.mkDefault false;
 
   nix.settings.experimental-features = [ "nix-command" "flakes" ];
   nix.gc = {

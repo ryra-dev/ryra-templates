@@ -76,6 +76,23 @@
         "type": "github"
       }
     },
+    "lima": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1782255067,
+        "narHash": "sha256-03WQy4JoW7PA49Ap/OC7/GX2VsDYfsvBERK356YhlGo=",
+        "owner": "nixos-lima",
+        "repo": "nixos-lima",
+        "rev": "24916c8e8719298499593e94a63f26eba839711b",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nixos-lima",
+        "repo": "nixos-lima",
+        "rev": "24916c8e8719298499593e94a63f26eba839711b",
+        "type": "github"
+      }
+    },
     "nixpkgs": {
       "locked": {
         "lastModified": 1789006805,
@@ -97,6 +114,7 @@
         "cua": "cua",
         "disko": "disko",
         "herdr-pkgs": "herdr-pkgs",
+        "lima": "lima",
         "nixpkgs": "nixpkgs",
         "ryra-services": "ryra-services",
         "sops-nix": "sops-nix"
@@ -106,13 +124,13 @@
       "locked": {
         "lastModified": 1788687228,
         "narHash": "sha256-OJKqRNOZGnThGVj5L3TQ4ZKBByM4K7QCe3vuGfvOyuU=",
-        "owner": "ryanravn",
+        "owner": "ryra-dev",
         "repo": "ryra-services",
         "rev": "1b884e6e206bcbfd0a5dacc94e750c680e381749",
         "type": "github"
       },
       "original": {
-        "owner": "ryanravn",
+        "owner": "ryra-dev",
         "repo": "ryra-services",
         "type": "github"
       }

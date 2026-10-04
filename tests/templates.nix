@@ -1,6 +1,6 @@
 let
   flake = builtins.getFlake ("path:" + toString ../.);
-  names = [ "base" "base-arm" "azure" "desktop" ];
+  names = [ "base" "base-arm" "azure" "desktop" "lima" "lima-intel" ];
   inspect = name:
     let
       c = (flake.lib.mkMachine { self = ../machines + "/${name}"; }).nixosConfigurations.machine.config;
@@ -8,12 +8,22 @@ let
       failures = map (a: a.message) (builtins.filter (a: !a.assertion) c.assertions);
       system = c.nixpkgs.hostPlatform.system;
       grub = c.boot.loader.grub.devices;
+      bootPaths = map (b: { inherit (b) path efiSysMountPoint devices; }) c.boot.loader.grub.mirroredBoots;
+      lima = c.services.lima.enable or false;
+      rootFs = c.fileSystems."/".fsType;
+      espSize = c.disko.devices.disk.main.content.partitions.ESP.size;
+      disk = c.disko.devices.disk.main.device;
+      snapshots = c.systemd.timers.ryra-snapshot-prune.enable;
       biosPartition = builtins.hasAttr "boot" c.disko.devices.disk.main.content.partitions;
       desktop = builtins.hasAttr "ryra-desktop" c.systemd.user.services;
       azure = c.services.waagent.enable;
       earlyoom = c.services.earlyoom.enable;
       zram = c.zramSwap.enable;
+      buildJobs = c.nix.settings.max-jobs;
+      buildCores = c.nix.settings.cores;
       packages = map (p: p.pname or p.name) c.environment.systemPackages;
       revision = c.system.configurationRevision;
+      timeZone = c.time.timeZone;
+      locale = c.i18n.defaultLocale;
     };
 in builtins.listToAttrs (map (name: { inherit name; value = inspect name; }) names)

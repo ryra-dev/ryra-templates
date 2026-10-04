@@ -1,96 +1,101 @@
-# Security updates, on the machine, without a laptop being open.
-#
-# It runs `ryra org machines update`, which is the same command you would type.
-# Not a second updater: the schedule is the only thing that lives here, and
-# moving it between a laptop and a box changes nothing about what happens.
-#
-# The checkout is why this needs saying out loud. `update` moves nixpkgs in the
-# ORGANIZATION'S FOLDER and applies it with an ordinary switch, so the box needs
-# that folder, not just its own /etc/nixos. Bumping /etc/nixos instead was tried
-# and is wrong: the next switch rebuilds from the tree and quietly puts the older
-# nixpkgs back.
-#
-# It also needs to be signed in, as itself. A machine that joined the
-# organization already holds a service credential, and what it can update is
-# whatever its vaults let it open. Being invited into a vault is a decision
-# somebody makes; a machine whose vault it cannot open is not updated.
-{ config, lib, pkgs, ryraPackage, ... }:
+{ config, lib, pkgs, machineDir, ... }:
 let
   cfg = config.services.ryra-update;
-in
-{
+  validDirectory = cfg.directory == "." || builtins.match "[A-Za-z0-9_-]+(/[A-Za-z0-9_-]+)*" cfg.directory != null;
+  protected = lib.optionalAttrs config.services.postgresql.enable {
+    postgresql = "services.postgresql.package";
+  } // lib.optionalAttrs config.services.grafana.enable {
+    grafana = "services.grafana.package";
+  } // cfg.protectedPackages;
+  settings = pkgs.writeText "ryra-update.json" (builtins.toJSON {
+    inherit (cfg) repository branch directory configuration inputs authorName authorEmail;
+    source = toString cfg.reviewedSource;
+    versions = lib.mapAttrs (_: attr: (lib.getAttrFromPath (lib.splitString "." attr) config).version) protected;
+    versionsExpression = "n: {" + lib.concatStringsSep " " (lib.mapAttrsToList
+      (name: attr: "\"${name}\" = n.config.${attr}.version;") protected) + "}";
+  });
+  helper = pkgs.writeShellApplication {
+    name = "ryra-system-update";
+    runtimeInputs = [ pkgs.git pkgs.openssh config.nix.package pkgs.jq pkgs.coreutils pkgs.util-linux pkgs.diffutils ];
+    text = builtins.readFile ./update.sh;
+  };
+  command = action: "${helper}/bin/ryra-system-update ${action} ${settings}";
+  locked = action: ''
+    exec 9>/run/lock/ryra-deploy.lock
+    flock -n 9
+    ${command action}
+  '';
+in {
   options.services.ryra-update = {
-    enable = lib.mkEnableOption "nightly security updates";
-
-    org = lib.mkOption {
-      type = lib.types.str;
-      description = "Organization id or slug.";
-    };
-
-    machines = lib.mkOption {
-      type = lib.types.listOf lib.types.str;
-      default = [ config.networking.hostName ];
-      description = ''
-        Which machines to update. This one by default. A box that updates the
-        others is the only way any of them gets an outside confirmation: a
-        machine switching itself has nobody to check it came back.
-      '';
-    };
-
-    checkout = lib.mkOption {
+    enable = lib.mkEnableOption "independent, signed NixOS dependency updates";
+    repository = lib.mkOption { type = lib.types.str; description = "Writable Git URL on any forge."; };
+    branch = lib.mkOption { type = lib.types.str; default = "main"; };
+    reviewedSource = lib.mkOption {
       type = lib.types.path;
-      description = "The organization's folder on this machine.";
+      default = machineDir;
+      description = "Deployed flake source. Automatic updates refuse changes outside its lockfile.";
     };
-
-    user = lib.mkOption {
-      type = lib.types.str;
-      description = "Whose ryra session to run as. Its vaults are the reach.";
-    };
-
-    dates = lib.mkOption {
-      type = lib.types.str;
-      default = "04:00";
-      description = "systemd OnCalendar expression.";
+    directory = lib.mkOption { type = lib.types.str; default = "."; description = "Relative flake directory in the repository."; };
+    configuration = lib.mkOption { type = lib.types.strMatching "[A-Za-z0-9_-]+"; default = config.networking.hostName; };
+    inputs = lib.mkOption { type = lib.types.listOf (lib.types.strMatching "[A-Za-z0-9_-]+"); default = [ "nixpkgs" "ryra-template" ]; };
+    gitKeyFile = lib.mkOption { type = lib.types.str; description = "Runtime SSH private key file for Git transport and commit signing, normally supplied by SOPS."; };
+    authorName = lib.mkOption { type = lib.types.str; default = "Ryra maintenance"; };
+    authorEmail = lib.mkOption { type = lib.types.str; default = "maintenance@localhost"; };
+    dates = lib.mkOption { type = lib.types.str; default = "03:10"; };
+    protectedPackages = lib.mkOption {
+      type = lib.types.attrsOf (lib.types.strMatching "[A-Za-z0-9_.-]+");
+      default = {};
+      description = "Additional config package paths whose major version must not change automatically. PostgreSQL and Grafana are checked when enabled.";
     };
   };
-
   config = lib.mkIf cfg.enable {
-    assertions = [{
-      assertion = cfg.checkout != null && cfg.org != "" && cfg.machines != [] && builtins.hasAttr cfg.user config.users.users;
-      message = "services.ryra-update needs an org, a checkout, at least one machine and an existing local user.";
-    }];
-
-    systemd.services.ryra-update = {
-      description = "Ryra security updates";
-      # Keep the updater alive across the activation it is supervising, including
-      # changes to its own pinned binary. Its next run uses the new unit.
+    assertions = [
+      { assertion = validDirectory && cfg.inputs != []; message = "services.ryra-update needs a relative flake directory and at least one input."; }
+      { assertion = lib.hasPrefix "/" cfg.gitKeyFile && !(lib.hasPrefix "/nix/store/" cfg.gitKeyFile); message = "The update Git key must be a runtime secret outside the Nix store."; }
+    ];
+    nix.settings.experimental-features = [ "nix-command" "flakes" ];
+    system.autoUpgrade = {
+      enable = true;
+      flake = "git+file:///var/lib/ryra-update/candidate?dir=${cfg.directory}#${cfg.configuration}";
+      upgrade = false;
+      dates = cfg.dates;
+      randomizedDelaySec = "10m";
+      persistent = false;
+      flags = [ "--max-jobs" "1" "--cores" "2" "--no-write-lock-file" ];
+      allowReboot = lib.mkDefault true;
+      rebootWindow = lib.mkDefault { lower = "01:00"; upper = "06:00"; };
+    };
+    systemd.services.nixos-upgrade = {
       restartIfChanged = false;
       stopIfChanged = false;
-      environment.HOME = config.users.users.${cfg.user}.home or "/var/empty";
+      environment.GIT_SSH_COMMAND = "${pkgs.openssh}/bin/ssh -i /run/credentials/nixos-upgrade.service/git -o IdentitiesOnly=yes -o BatchMode=yes -o StrictHostKeyChecking=yes";
       serviceConfig = {
-        Type = "oneshot";
-        User = cfg.user;
-        WorkingDirectory = cfg.checkout;
-        TimeoutStartSec = "2h";
+        StateDirectory = "ryra-update";
+        StateDirectoryMode = "0700";
+        LoadCredential = [ "git:${cfg.gitKeyFile}" ];
+        TimeoutStartSec = "4h";
+        Nice = 15;
       };
-      path = [ pkgs.nix pkgs.nixos-rebuild pkgs.git pkgs.openssh ];
-      # By store path. `environment.systemPackages` is a person's PATH, not a
-      # unit's, so naming the binary would resolve to nothing here.
-      script = ''
-        exec ${ryraPackage}/bin/ryra org machines update ${lib.escapeShellArg cfg.org} \
-          ${lib.escapeShellArgs cfg.machines}
-      '';
+      path = [ pkgs.util-linux ];
+      script = lib.mkBefore (locked "prepare");
+      postStart = locked "verify";
+      unitConfig.OnFailure = [ "ryra-update-rollback.service" ];
     };
-
-    systemd.timers.ryra-update = {
+    systemd.services.ryra-update-rollback = {
+      serviceConfig = { Type = "oneshot"; StateDirectory = "ryra-update"; StateDirectoryMode = "0700"; };
+      path = [ pkgs.util-linux ];
+      script = locked "rollback";
+    };
+    systemd.services.ryra-update-verify = {
+      after = [ "network-online.target" ];
+      wants = [ "network-online.target" ];
+      serviceConfig = { Type = "oneshot"; StateDirectory = "ryra-update"; StateDirectoryMode = "0700"; };
+      path = [ pkgs.util-linux ];
+      script = locked "verify";
+    };
+    systemd.timers.ryra-update-verify = {
       wantedBy = [ "timers.target" ];
-      # Persistent, so a box that was off at four runs when it comes back. The
-      # machine that is off most is otherwise the one nobody ever patches.
-      timerConfig = {
-        OnCalendar = cfg.dates;
-        Persistent = true;
-        RandomizedDelaySec = "30m";
-      };
+      timerConfig = { OnBootSec = "5min"; OnUnitActiveSec = "5min"; };
     };
   };
 }
