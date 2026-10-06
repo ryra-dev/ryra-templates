@@ -14,18 +14,17 @@ fi
 # SSH agents need not inherit the desktop's environment. Select this account's
 # display explicitly, including when SSH forwarded a different DISPLAY.
 export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$desktop_uid}"
-desktop_runtime="$XDG_RUNTIME_DIR/ryra-desktop"
-export DISPLAY=":$desktop_uid"
-export XAUTHORITY="$desktop_runtime/Xauthority"
 export DBUS_SESSION_BUS_ADDRESS="unix:path=$XDG_RUNTIME_DIR/bus"
-export XDG_SESSION_TYPE=x11
+export XDG_SESSION_TYPE=wayland
+export WAYLAND_DISPLAY=wayland-ryra
+export CUA_DRIVER_RS_ENABLE_WAYLAND=1
 export NO_AT_BRIDGE=0
 export GTK_A11Y=atspi
-unset WAYLAND_DISPLAY SWAYSOCK HYPRLAND_INSTANCE_SIGNATURE
+unset DISPLAY XAUTHORITY SWAYSOCK HYPRLAND_INSTANCE_SIGNATURE
 
 if ! systemctl --no-ask-password is-active --quiet "ryra-desktop@$(id -un).service" \
-  || [[ ! -s "$XAUTHORITY" ]] \
-  || ! timeout 2s xdpyinfo >/dev/null 2>&1; then
+  || [[ ! -S "$XDG_RUNTIME_DIR/$WAYLAND_DISPLAY" ]] \
+  || ! busctl --user --timeout=2 status org.gnome.Shell >/dev/null 2>&1; then
   echo 'Start your desktop with ryra desktop start before using computer control.' >&2
   exit 1
 fi

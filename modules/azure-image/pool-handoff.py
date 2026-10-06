@@ -87,6 +87,7 @@ def handoff(encoded):
             write('/etc/sudoers.d/ryra-pool-' + name, name + ' ALL=(ALL) NOPASSWD:ALL\n', 0o440)
         run('usermod', '--password', '*', name)
         run('chage', '-d', '1', '-M', '-1', '-E', '-1', name)
+        run('loginctl', 'enable-linger', name)
         # Root-owned keys avoid relying on a guest account's writable home.
         keys = access['root_keys'] if name == 'root' or not ca else []
         write('/etc/ssh/authorized_keys.d/' + name, '\n'.join(keys) + '\n', 0o644)

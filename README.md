@@ -13,7 +13,7 @@ Start with `templates.default` (also named `base`) and edit `configuration.nix`:
 
 For Azure, import `ryraModules.azure` in that module. The existing `base`,
 `base-arm`, `azure`, and `desktop` names retain their architecture and platform
-choices. All include the GNOME Flashback remote desktop by default. The `lima`
+choices. All include the GNOME Shell remote desktop by default. The `lima`
 (Apple Silicon) and `lima-intel` presets import `ryraModules.lima` for local macOS
 VMs and keep their terminal-only defaults. They all use the same modules;
 there are no generated or separately maintained copies of the implementation.
@@ -22,9 +22,9 @@ For pre-provisioned Azure computers, use the [azure-image](machines/azure-image/
 preset to build a clean Gen 2 VHD with first-boot provisioning and ownership
 handoff. It shares the machine modules above; assigned computers use `azure`.
 
-The desktop starts on demand through `ryra desktop`. Set its per-user password
-with `ryra desktop password`; the viewer is available only through the machine's
-authenticated connection. Closing the viewer leaves the session running.
+The desktop starts on demand through `ryra desktop`, with automatic sign-in
+through the machine's authenticated connection. Closing the viewer leaves the
+session running. GNOME Shell runs on Wayland with a private VNC socket.
 Set `ryra.desktop.enable = false` for a terminal-only machine.
 
 Each copied machine owns its hostname, `configuration.nix`, generated login and

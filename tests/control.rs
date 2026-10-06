@@ -37,19 +37,17 @@ impl Machine {
         )
         .expect("computer control");
         this.executable("id", "if [ \"$1\" = -un ]; then echo alice; else echo 1000; fi");
-        this.executable("xprop", "echo '_NET_SUPPORTING_WM_CHECK(WINDOW): window id # 0x1'");
         this.executable("curl", "exit 0");
         this.executable("awk", "echo \"${TEST_MEMORY:-1048576}\"");
         this.executable("vncpasswd", "printf password > \"$1\"");
-        this.executable("xdpyinfo", "exit 0");
-        this.executable("timeout", "shift; exec \"$@\"");
+        this.executable("busctl", "exit 0");
         this.executable(
             "cua-driver",
             r#"
 printf '%s\n' "$@"
-printf '%s\n' "$DISPLAY" "$XAUTHORITY" "$DBUS_SESSION_BUS_ADDRESS" "$XDG_SESSION_TYPE"
+printf '%s\n' "${DISPLAY-unset}" "${XAUTHORITY-unset}" "$DBUS_SESSION_BUS_ADDRESS" "$XDG_SESSION_TYPE"
 printf '%s\n' "$CUA_DRIVER_RS_TELEMETRY_ENABLED" "$CUA_DRIVER_RS_UPDATE_CHECK"
-printf '%s\n' "${WAYLAND_DISPLAY-unset}" "${SWAYSOCK-unset}" "${HYPRLAND_INSTANCE_SIGNATURE-unset}"
+printf '%s\n' "${WAYLAND_DISPLAY-unset}" "${SWAYSOCK-unset}" "${HYPRLAND_INSTANCE_SIGNATURE-unset}" "${CUA_DRIVER_RS_ENABLE_WAYLAND-unset}"
 "#,
         );
         this.executable(
@@ -188,13 +186,15 @@ fn low_memory_and_start_failures_are_actionable() {
 }
 
 #[test]
-fn active_service_requires_a_vnc_socket_and_http_viewer() {
+fn active_service_requires_vnc_wayland_and_http_viewer() {
     let machine = Machine::new();
     machine.password();
     machine.state("active");
     assert!(machine.said("status", &[]).contains("failed"));
     let _socket =
         UnixListener::bind(machine.0.join("run/ryra-desktop/vnc.sock")).expect("VNC socket");
+    assert!(machine.said("status", &[]).contains("failed"));
+    let _wayland = UnixListener::bind(machine.0.join("run/wayland-ryra")).expect("Wayland socket");
     assert_eq!(
         machine.said("status", &[]).trim(),
         r#"{"state":"running","port":17000}"#
@@ -239,7 +239,7 @@ fn password_change_is_atomic_and_refused_while_running() {
 fn computer_control_selects_the_accounts_desktop_from_an_ssh_environment() {
     let machine = Machine::new();
     machine.state("active");
-    fs::write(machine.0.join("run/ryra-desktop/Xauthority"), "cookie").unwrap();
+    let _wayland = UnixListener::bind(machine.0.join("run/wayland-ryra")).expect("Wayland socket");
     let out = machine.computer_control(&["mcp", "--direct"]);
     assert!(
         out.status.success(),
@@ -247,10 +247,10 @@ fn computer_control_selects_the_accounts_desktop_from_an_ssh_environment() {
         String::from_utf8_lossy(&out.stderr)
     );
     assert_eq!(
-        String::from_utf8(out.stdout).unwrap(),
+        String::from_utf8(out.stdout).expect("UTF-8"),
         format!(
-            "mcp\n--direct\n:1000\n{}/run/ryra-desktop/Xauthority\nunix:path={}/run/bus\nx11\nfalse\nfalse\nunset\nunset\nunset\n",
-            machine.0.display(), machine.0.display()
+            "mcp\n--direct\nunset\nunset\nunix:path={}/run/bus\nwayland\nfalse\nfalse\nwayland-ryra\nunset\nunset\n1\n",
+            machine.0.display()
         )
     );
 }
@@ -271,10 +271,10 @@ fn computer_control_rejects_stopped_unready_or_wrong_account_desktops() {
     );
     machine.state("active");
     rejected();
-    fs::write(machine.0.join("run/ryra-desktop/Xauthority"), "cookie").unwrap();
-    machine.executable("xdpyinfo", "exit 1");
+    let _wayland = UnixListener::bind(machine.0.join("run/wayland-ryra")).expect("Wayland socket");
+    machine.executable("busctl", "exit 1");
     rejected();
-    machine.executable("xdpyinfo", "exit 0");
+    machine.executable("busctl", "exit 0");
     for uid in ["0", "999", "49001"] {
         machine.executable("id", &format!("echo {uid}"));
         let out = machine.computer_control(&["mcp", "--direct"]);

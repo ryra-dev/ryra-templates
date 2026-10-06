@@ -4,7 +4,7 @@ desktop_fail() {
 
 desktop_is_ready() {
   [[ -S "$desktop_runtime/vnc.sock" ]] \
-    && [[ "$(DISPLAY=":$desktop_uid" XAUTHORITY="$desktop_runtime/Xauthority" xprop -root _NET_SUPPORTING_WM_CHECK 2>/dev/null)" == *"window id # "* ]] \
+    && [[ -S "$XDG_RUNTIME_DIR/wayland-ryra" ]] \
     && curl --fail --silent --max-time 0.25 "http://127.0.0.1:$desktop_port/vnc.html" >/dev/null
 }
 

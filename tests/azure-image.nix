@@ -22,6 +22,10 @@ assert updated.services.ryra-update.inputs == [ "nixpkgs" "ryra-template" ];
 assert c.fileSystems."/".fsType == assigned.config.fileSystems."/".fsType;
 assert c.environment.etc ? "ryra/deploy/health";
 assert c.environment.etc ? "ryra/deploy/preflight";
+assert c.ryra.desktop.enable && builtins.hasAttr "ryra-desktop@" c.systemd.services;
+assert c.services.desktopManager.gnome.enable && !c.services.desktopManager.gnome.flashback.enableMetacity;
+assert c.systemd.services."ryra-desktop@".environment.XDG_SESSION_TYPE == "wayland";
+assert builtins.any (p: (p.pname or p.name) == "ryra-desktop") c.environment.systemPackages;
 assert c.boot.loader.grub.devices == [ "nodev" ];
 {
   image = c.system.build.azureImage.drvPath;

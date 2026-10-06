@@ -1,9 +1,13 @@
-{ config, lib, pkgs, cuaDriver, ... }:
+{ config, lib, pkgs, cuaDriver, cuaGnomeExtension, ... }:
 let
   cfg = config.ryra.desktop.computerControl;
+  extension = pkgs.runCommand "cua-gnome-extension" {} ''
+    mkdir -p "$out/share/gnome-shell/extensions"
+    cp -r ${cuaGnomeExtension} "$out/share/gnome-shell/extensions/winrects@cua"
+  '';
   driver = pkgs.writeShellApplication {
     name = "cua-driver";
-    runtimeInputs = with pkgs; [ coreutils systemd xdpyinfo imagemagick ];
+    runtimeInputs = with pkgs; [ coreutils systemd imagemagick ];
     text = ''
       export RYRA_CUA_DRIVER=${lib.getExe cfg.package}
       ${builtins.readFile ./desktop/computer-control.sh}
@@ -24,7 +28,10 @@ in {
       assertion = config.ryra.desktop.enable;
       message = "Computer control requires ryra.desktop.enable.";
     }];
-    environment.systemPackages = [ driver ];
+    environment.systemPackages = [ driver extension ];
+    programs.dconf.profiles.user.databases = [{
+      settings."org/gnome/shell".enabled-extensions = [ "winrects@cua" ];
+    }];
     services.gnome.at-spi2-core.enable = true;
     # A long-lived user manager may still carry the accessibility-disabled
     # environment from before this option was enabled.

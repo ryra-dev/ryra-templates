@@ -21,12 +21,26 @@
   };
   environment.systemPackages = [ pkgs.cloud-init (pkgs.writeShellApplication {
     name = "ryra-cloud-ready";
-    runtimeInputs = [ pkgs.coreutils pkgs.cloud-init pkgs.chromium ];
+    runtimeInputs = [ pkgs.coreutils pkgs.cloud-init pkgs.chromium pkgs.systemd pkgs.jq ];
     text = ''
       test -f /etc/NIXOS || { echo "This image is not NixOS" >&2; exit 1; }
       test -f /var/lib/cloud/instance/boot-finished || { echo "Initial computer setup is still running" >&2; exit 1; }
       cloud-init status --format json >/dev/null
       herdr --version >/dev/null
+      ryra --version >/dev/null
+      command -v ryra-desktop >/dev/null
+      systemctl cat ryra-desktop@.service >/dev/null
+      if [ "$(id -u)" != 0 ]; then
+        desktop_status=$(ryra-desktop status)
+        if ! printf '%s' "$desktop_status" | jq -e '.state != "failed"' >/dev/null; then
+          printf '%s\n' "$desktop_status" >&2
+          exit 1
+        fi
+        test "$(loginctl show-user "$(id -u)" -p Linger --value)" = yes || {
+          echo 'Phone notifications require a persistent user session. Enable lingering for this account.' >&2
+          exit 1
+        }
+      fi
       probe_dir=$(mktemp -d)
       trap 'rm -rf "$probe_dir"' EXIT
       printf 'workspace probe\n' > "$probe_dir/document.txt"

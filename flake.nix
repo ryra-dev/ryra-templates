@@ -45,6 +45,7 @@
               ({ config, ... }: {
                 _module.args.herdrPkgs = sources.herdr-pkgs.legacyPackages.${config.nixpkgs.hostPlatform.system};
                 _module.args.cuaDriver = sources.cua.packages.${config.nixpkgs.hostPlatform.system}.cua-driver;
+                _module.args.cuaGnomeExtension = sources.cua + "/libs/cua-driver/wayland-helper/winrects@cua";
               })
             ] ++ builtins.filter
               (path: path != self + "/modules/ryra/settings.nix" && nixpkgs.lib.hasSuffix ".nix" (toString path))
