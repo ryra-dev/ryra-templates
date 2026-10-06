@@ -95,3 +95,18 @@
    vnc_pw_buffer->pw_stream = pw_stream;
    vnc_pw_buffer->pw_buffer = pw_buffer;
    g_mutex_init (&vnc_pw_buffer->buffer_mutex);
+--- a/src/grd-session-vnc.c
++++ b/src/grd-session-vnc.c
+@@ -693,6 +693,12 @@
+ {
+   GrdSessionVnc *session_vnc = user_data;
+ 
++  if (condition & (G_IO_HUP | G_IO_ERR | G_IO_NVAL))
++    {
++      maybe_queue_close_session_idle (session_vnc);
++      return G_SOURCE_REMOVE;
++    }
++
+   if (condition & G_IO_IN)
+     {
+       if (rfbIsActive (session_vnc->rfb_screen))
