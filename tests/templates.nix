@@ -12,6 +12,13 @@ let
       && !(c.systemd.user.services."org.gnome.Shell@".environment ? PATH)
       && builtins.all (app: flake.inputs.nixpkgs.lib.hasInfix app c.services.desktopManager.gnome.extraGSettingsOverrides)
         [ "firefox.desktop" "org.gnome.Console.desktop" "org.gnome.Nautilus.desktop" "org.gnome.Settings.desktop" ]
+      && builtins.all (setting: flake.inputs.nixpkgs.lib.hasInfix (builtins.unsafeDiscardStringContext setting) c.services.desktopManager.gnome.extraGSettingsOverrides)
+        (let wallpaper = builtins.head (builtins.filter (p: p.name == "ryra-wallpapers") c.environment.systemPackages);
+         in [
+           "picture-uri='file://${wallpaper}/share/backgrounds/ryra/horizon-light.svg'"
+           "picture-uri-dark='file://${wallpaper}/share/backgrounds/ryra/horizon-light.svg'"
+           "picture-options='zoom'"
+         ])
     );
     {
       failures = map (a: a.message) (builtins.filter (a: !a.assertion) c.assertions);

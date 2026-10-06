@@ -1,6 +1,24 @@
 { config, lib, pkgs, ... }:
 let
   common = builtins.readFile ./desktop/common.sh;
+  wallpaper = pkgs.runCommand "ryra-wallpapers" {} ''
+    install -Dm444 ${./desktop/horizon-light.svg} "$out/share/backgrounds/ryra/horizon-light.svg"
+    mkdir -p "$out/share/gnome-background-properties"
+    cat > "$out/share/gnome-background-properties/ryra.xml" <<EOF
+    <?xml version="1.0" encoding="UTF-8"?>
+    <!DOCTYPE wallpapers SYSTEM "gnome-wp-list.dtd">
+    <wallpapers>
+      <wallpaper deleted="false">
+        <name>Ryra Horizon light</name>
+        <filename>$out/share/backgrounds/ryra/horizon-light.svg</filename>
+        <filename-dark>$out/share/backgrounds/ryra/horizon-light.svg</filename-dark>
+        <options>zoom</options>
+        <pcolor>#18181a</pcolor>
+        <scolor>#18181a</scolor>
+      </wallpaper>
+    </wallpapers>
+    EOF
+  '';
   helper = pkgs.writeShellApplication {
     name = "ryra-desktop";
     runtimeInputs = with pkgs; [ coreutils systemd curl jq tigervnc gawk ];
@@ -23,7 +41,7 @@ in {
   options.ryra.desktop.enable = lib.mkEnableOption "the Ryra virtual desktop";
   config = lib.mkIf config.ryra.desktop.enable {
     environment.systemPackages = with pkgs; [
-      helper firefox gnome-console gnome-control-center
+      helper wallpaper firefox gnome-console gnome-control-center
     ];
     nixpkgs.overlays = [(final: prev: {
       gnome-remote-desktop = prev.gnome-remote-desktop.overrideAttrs (old: {
@@ -43,8 +61,9 @@ in {
         [org.gnome.desktop.remote-desktop.vnc.headless]
         enable=true
         [org.gnome.desktop.background]
-        picture-uri='file://${pkgs.gnome-backgrounds}/share/backgrounds/gnome/adwaita-l.jxl'
-        picture-uri-dark='file://${pkgs.gnome-backgrounds}/share/backgrounds/gnome/adwaita-d.jxl'
+        picture-uri='file://${wallpaper}/share/backgrounds/ryra/horizon-light.svg'
+        picture-uri-dark='file://${wallpaper}/share/backgrounds/ryra/horizon-light.svg'
+        picture-options='zoom'
         [org.gnome.desktop.lockdown]
         disable-lock-screen=true
         [org.gnome.desktop.session]
