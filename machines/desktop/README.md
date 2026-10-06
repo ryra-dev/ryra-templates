@@ -1,6 +1,7 @@
 # ryra/desktop
 
-The x86-64 server preset with the Ryra virtual desktop enabled.
+The x86-64 server preset with standard GNOME Shell on Wayland and automatic
+sign-in through Ryra's private remote desktop connection.
 
 This is a compatibility preset of the shared Ryra machine template. Edit
 `configuration.nix` for architecture, desktop and networking choices. The flake
