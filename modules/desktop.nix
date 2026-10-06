@@ -23,7 +23,7 @@ in {
   options.ryra.desktop.enable = lib.mkEnableOption "the Ryra virtual desktop";
   config = lib.mkIf config.ryra.desktop.enable {
     environment.systemPackages = with pkgs; [
-      helper firefox
+      helper firefox gnome-console gnome-control-center
     ];
     nixpkgs.overlays = [(final: prev: {
       gnome-remote-desktop = prev.gnome-remote-desktop.overrideAttrs (old: {
@@ -38,6 +38,8 @@ in {
       enable = true;
       extraGSettingsOverridePackages = [ pkgs.gnome-remote-desktop ];
       extraGSettingsOverrides = ''
+        [org.gnome.shell]
+        favorite-apps=['firefox.desktop', 'org.gnome.Console.desktop', 'org.gnome.Nautilus.desktop', 'org.gnome.Settings.desktop']
         [org.gnome.desktop.remote-desktop.vnc.headless]
         enable=true
         [org.gnome.desktop.background]
@@ -59,6 +61,8 @@ in {
     fonts.enableDefaultPackages = true;
     systemd.user.services."org.gnome.Shell@" = {
       overrideStrategy = "asDropin";
+      # Inherit the login PATH. NixOS's generated service PATH hides desktop apps.
+      path = lib.mkForce [];
       serviceConfig.ExecStart = [ "" "${pkgs.gnome-shell}/bin/gnome-shell --headless --wayland-display=wayland-ryra --mode=%i" ];
     };
     security.pam.services.ryra-desktop.startSession = true;

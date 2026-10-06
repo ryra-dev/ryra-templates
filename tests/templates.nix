@@ -9,6 +9,9 @@ let
       c.services.desktopManager.gnome.enable
       && !c.services.desktopManager.gnome.flashback.enableMetacity
       && c.systemd.services."ryra-desktop@".environment.XDG_SESSION_TYPE == "wayland"
+      && !(c.systemd.user.services."org.gnome.Shell@".environment ? PATH)
+      && builtins.all (app: flake.inputs.nixpkgs.lib.hasInfix app c.services.desktopManager.gnome.extraGSettingsOverrides)
+        [ "firefox.desktop" "org.gnome.Console.desktop" "org.gnome.Nautilus.desktop" "org.gnome.Settings.desktop" ]
     );
     {
       failures = map (a: a.message) (builtins.filter (a: !a.assertion) c.assertions);
