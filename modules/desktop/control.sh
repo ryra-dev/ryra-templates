@@ -2,21 +2,25 @@ desktop_fail() {
   jq -cn --arg message "$1" '{state:"failed", message:$message}'
 }
 
-desktop_is_ready() {
-  [[ -S "$desktop_runtime/vnc.sock" ]] \
-    && [[ -S "$XDG_RUNTIME_DIR/wayland-ryra" ]] \
-    && curl --fail --silent --max-time 0.25 "http://127.0.0.1:$desktop_port/vnc.html" >/dev/null
+desktop_starting() {
+  jq -cn --arg message "$1" '{state:"starting", message:$message}'
 }
 
 desktop_status() {
   if systemctl --no-ask-password is-active --quiet "$desktop_unit"; then
-    if desktop_is_ready; then
-      jq -cn --argjson port "$desktop_port" '{state:"running",port:$port}'
+    if [[ ! -S "$XDG_RUNTIME_DIR/wayland-ryra" ]]; then
+      desktop_starting 'Starting the desktop display…'
+    elif [[ ! -S "$desktop_runtime/vnc.sock" ]]; then
+      desktop_starting 'Preparing the desktop connection…'
+    elif ! curl --fail --silent --max-time 2 "http://127.0.0.1:$desktop_port/vnc.html" >/dev/null; then
+      desktop_starting 'Waiting for the desktop viewer…'
     else
-      desktop_fail "The desktop is starting or its viewer is unavailable. Check journalctl -u $desktop_unit."
+      jq -cn --argjson port "$desktop_port" '{state:"running",port:$port}'
     fi
   elif systemctl --no-ask-password is-failed --quiet "$desktop_unit"; then
-    desktop_fail "The desktop service failed. Check journalctl -u $desktop_unit, then retry ryra desktop start."
+    desktop_result=$(systemctl --no-ask-password show "$desktop_unit" --property=Result --value)
+    desktop_exit=$(systemctl --no-ask-password show "$desktop_unit" --property=ExecMainStatus --value)
+    desktop_fail "The desktop service failed: $desktop_result (process status $desktop_exit). Inspect systemctl status $desktop_unit and journalctl _UID=$desktop_uid, then retry ryra desktop start."
   elif [[ ! -s "$desktop_password" ]]; then
     printf '%s\n' '{"state":"needs_password"}'
   else
@@ -52,21 +56,11 @@ case "${1:-status}" in
       desktop_fail 'Less than 512 MiB of available RAM. Free memory before starting a desktop.'
       exit 0
     fi
-    if ! systemctl --no-ask-password start "$desktop_unit"; then
-      desktop_fail "Could not start the desktop. Check journalctl -u $desktop_unit."
+    if ! desktop_start_error=$(systemctl --no-ask-password start "$desktop_unit" 2>&1); then
+      desktop_fail "Could not start the desktop: $desktop_start_error"
       exit 0
     fi
-    for ((desktop_attempt=0; desktop_attempt<40; desktop_attempt++)); do
-      if desktop_is_ready; then
-        desktop_status
-        exit 0
-      fi
-      if systemctl --no-ask-password is-failed --quiet "$desktop_unit"; then
-        break
-      fi
-      sleep 0.25
-    done
-    desktop_fail "The desktop did not become ready. Check its status and journalctl -u $desktop_unit."
+    desktop_status
     ;;
   stop)
     systemctl --no-ask-password stop "$desktop_unit"

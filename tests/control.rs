@@ -59,6 +59,7 @@ case "$2" in
   start) test "${TEST_START_FAIL:-0}" = 0 || exit 1; echo active > "$TEST_ROOT/state" ;;
   stop) echo stopped > "$TEST_ROOT/state" ;;
   reset-failed) exit 0 ;;
+  show) case "$4" in --property=Result) echo exit-code ;; --property=ExecMainStatus) echo 1 ;; *) exit 2 ;; esac ;;
   *) exit 2 ;;
 esac
 "#,
@@ -189,12 +190,12 @@ fn low_memory_and_start_failures_are_actionable() {
 fn active_service_requires_vnc_wayland_and_http_viewer() {
     let machine = Machine::new();
     machine.password();
-    machine.state("active");
-    assert!(machine.said("status", &[]).contains("failed"));
+    assert!(machine.said("start", &[]).contains("Starting the desktop display"));
+    assert!(machine.said("status", &[]).contains("Starting the desktop display"));
+    let _wayland = UnixListener::bind(machine.0.join("run/wayland-ryra")).expect("Wayland socket");
+    assert!(machine.said("status", &[]).contains("Preparing the desktop connection"));
     let _socket =
         UnixListener::bind(machine.0.join("run/ryra-desktop/vnc.sock")).expect("VNC socket");
-    assert!(machine.said("status", &[]).contains("failed"));
-    let _wayland = UnixListener::bind(machine.0.join("run/wayland-ryra")).expect("Wayland socket");
     assert_eq!(
         machine.said("status", &[]).trim(),
         r#"{"state":"running","port":17000}"#
@@ -203,7 +204,9 @@ fn active_service_requires_vnc_wayland_and_http_viewer() {
         .said("start", &[("TEST_MEMORY", "0")])
         .contains("running"));
     machine.executable("curl", "exit 7");
-    assert!(machine.said("status", &[]).contains("failed"));
+    assert!(machine.said("status", &[]).contains("Waiting for the desktop viewer"));
+    machine.state("failed");
+    assert!(machine.said("status", &[]).contains("exit-code (process status 1)"));
 }
 
 #[test]

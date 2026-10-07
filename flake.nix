@@ -1,5 +1,5 @@
 {
-  description = "Ryra machine modules and compatibility templates";
+  description = "Ryra organization flakes and machine modules";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
@@ -26,30 +26,28 @@
   outputs = { self, nixpkgs, disko, sops-nix, ... }@sharedInputs:
     let
       names = [ "base" "base-arm" "azure" "desktop" "lima" "lima-intel" ];
-      mkMachine = { self, inputs ? {} }:
+      mkMachine = { self, inputs ? {}, machineDir ? self, hostName ? "machine", modules ? [], specialArgs ? {} }:
         let
           sources = sharedInputs // inputs;
-          hostName = nixpkgs.lib.fileContents (self + "/hostname");
-          registries = import (self + "/registries.nix") sources;
+          registries = import (machineDir + "/registries.nix") sources;
           machine = nixpkgs.lib.nixosSystem {
-            specialArgs = {
-              inherit self hostName;
-              machineDir = self;
+            specialArgs = specialArgs // {
+              inherit self hostName machineDir;
               ryraModules = sharedInputs.self.nixosModules;
               serviceRegistries = registries;
               serviceModule = sources.ryra-services.nixosModules.services;
             };
             modules = [
               sharedInputs.self.nixosModules.default
-              (self + "/configuration.nix")
+              (machineDir + "/configuration.nix")
               ({ config, ... }: {
                 _module.args.herdrPkgs = sources.herdr-pkgs.legacyPackages.${config.nixpkgs.hostPlatform.system};
                 _module.args.cuaDriver = sources.cua.packages.${config.nixpkgs.hostPlatform.system}.cua-driver;
                 _module.args.cuaGnomeExtension = sources.cua + "/libs/cua-driver/wayland-helper/winrects@cua";
               })
-            ] ++ builtins.filter
-              (path: path != self + "/modules/ryra/settings.nix" && nixpkgs.lib.hasSuffix ".nix" (toString path))
-              (nixpkgs.lib.filesystem.listFilesRecursive (self + "/modules"));
+            ] ++ modules ++ builtins.filter
+              (path: path != machineDir + "/modules/ryra/settings.nix" && nixpkgs.lib.hasSuffix ".nix" (toString path))
+              (nixpkgs.lib.filesystem.listFilesRecursive (machineDir + "/modules"));
           };
         in {
           nixosConfigurations.${hostName} = machine;
@@ -58,8 +56,33 @@
             index = source.index;
           }) registries;
         };
+      mkOrganization = { self, inputs ? {} }:
+        let
+          declaration = builtins.fromTOML (builtins.readFile (self + "/organization.toml"));
+          machines = builtins.listToAttrs (map (machine: {
+            name = machine.name;
+            value = mkMachine {
+              inherit self inputs;
+              hostName = machine.name;
+              specialArgs = { inherit machine declaration; };
+              machineDir = self + "/${machine.config or "machines/${machine.name}"}";
+              modules = nixpkgs.lib.concatMap (stack:
+                builtins.filter (path: nixpkgs.lib.hasSuffix ".nix" (toString path))
+                  (nixpkgs.lib.filesystem.listFilesRecursive (self + "/stacks/${stack}"))
+              ) (nixpkgs.lib.unique ((machine.stacks or []) ++ nixpkgs.lib.concatMap
+                (group: group.stacks or [])
+                (builtins.filter (group: builtins.elem group.name
+                  ((machine.access or []) ++ (machine.admin or []))) (declaration.groups or []))));
+            };
+          }) (builtins.filter (machine: machine ? template || builtins.pathExists
+            (self + "/${machine.config or "machines/${machine.name}"}/configuration.nix"))
+            (declaration.machines or [])));
+        in {
+          nixosConfigurations = builtins.mapAttrs (name: machine: machine.nixosConfigurations.${name}) machines;
+          ryraCatalog = builtins.mapAttrs (_: machine: machine.ryraCatalog) machines;
+        };
     in {
-      lib = { inherit mkMachine; };
+      lib = { inherit mkMachine mkOrganization; };
       nixosModules = {
         default = {
           imports = [ disko.nixosModules.disko sops-nix.nixosModules.sops ./modules/default.nix ];

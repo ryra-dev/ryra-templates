@@ -109,6 +109,22 @@
         "type": "github"
       }
     },
+    "nixpkgs_2": {
+      "locked": {
+        "lastModified": 1791260994,
+        "narHash": "sha256-Miqqk/ammqnTUxaoCyvtwoPeLbI1ksFyLxi/CazZpWY=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "151fa4e8ddfdd8dd25d945ad94ed54a13de9f6e4",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "151fa4e8ddfdd8dd25d945ad94ed54a13de9f6e4",
+        "type": "github"
+      }
+    },
     "root": {
       "inputs": {
         "cua": "cua",
@@ -121,12 +137,15 @@
       }
     },
     "ryra-services": {
+      "inputs": {
+        "nixpkgs": "nixpkgs_2"
+      },
       "locked": {
-        "lastModified": 1788687228,
-        "narHash": "sha256-OJKqRNOZGnThGVj5L3TQ4ZKBByM4K7QCe3vuGfvOyuU=",
+        "lastModified": 1791402198,
+        "narHash": "sha256-PMV/KmAWTgK8jqT30kRoqKeeGBtZP7bqM2lpi/NWE9M=",
         "owner": "ryra-dev",
         "repo": "ryra-services",
-        "rev": "1b884e6e206bcbfd0a5dacc94e750c680e381749",
+        "rev": "ccbf7ca3048655c1c2d7a11bf94efe3141d2c031",
         "type": "github"
       },
       "original": {

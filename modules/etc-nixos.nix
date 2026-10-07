@@ -8,7 +8,7 @@
 # So the machine keeps its own source, WRITABLE and at `/etc/nixos`, which means every ordinary
 # NixOS command works here with no ryra-shaped knowledge at all:
 #
-#   $EDITOR /etc/nixos/modules/whatever.nix
+#   $EDITOR /etc/nixos/machines/$(hostname)/modules/machine.nix
 #   nixos-rebuild switch
 #
 # That is the whole reason it is a copy rather than the `environment.etc` symlink into the store

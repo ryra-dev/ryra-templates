@@ -1,0 +1,25 @@
+[org]
+name = "Organization layout check"
+
+[[groups]]
+name = "team"
+stacks = ["shared"]
+
+[[machines]]
+name = "one"
+from = "needed"
+template = "ryra/base"
+config = "hosts/common"
+access = ["team"]
+
+[[machines]]
+name = "two"
+from = "needed"
+template = "ryra/base"
+config = "hosts/common"
+admin = ["team"]
+stacks = ["shared"]
+
+[[machines]]
+name = "unmanaged"
+from = "needed"

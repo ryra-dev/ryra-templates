@@ -60,12 +60,15 @@
     fzf
     gh
     git
+    libarchive
     nodejs
     python3
     ripgrep
     rsync
+    unzip
     uv
     vim
+    zip
   ];
 
   system.autoUpgrade.enable = lib.mkDefault false;

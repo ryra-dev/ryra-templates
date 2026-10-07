@@ -1,7 +1,8 @@
 # ryra-templates
 
-One shared NixOS machine implementation, with small compatibility presets.
-Start with `templates.default` (also named `base`) and edit `configuration.nix`:
+One root flake per organization, with shared NixOS modules and machine presets.
+Ryra copies `templates.default` (also named `base`) into `machines/<name>` and
+uses its `flake.nix` to seed the organization root once. Edit the machine's `configuration.nix`:
 
 ```nix
 { ... }: {
@@ -27,12 +28,17 @@ through the machine's authenticated connection. Closing the viewer leaves the
 session running. GNOME Shell runs on Wayland with a private VNC socket.
 Set `ryra.desktop.enable = false` for a terminal-only machine.
 
-Each copied machine owns its hostname, `configuration.nix`, generated login and
-SOPS modules, and service settings. Its flake references this repository as the
-`ryra-template` input. Commit the machine's `flake.lock` to pin that dependency:
-upstream edits then take effect only through an explicit input update and deploy.
-The copied configuration has no relative imports outside its directory, but it
-uses pinned shared source rather than carrying a private copy of every module.
+The root flake calls `ryra-template.lib.mkOrganization { inherit self inputs; }`.
+It reads `organization.toml` and builds a named output for every machine with a
+template or local configuration, using `machines/<name>` or its declared `config` directory. The machine
+name also sets its hostname. Login modules, SOPS ciphertext and service settings
+stay in the machine directory. Shared stacks are imported from `stacks/<name>`
+for the machine and its access or admin groups, preserving relative asset paths.
+
+Commit the organization's root `flake.lock` to pin dependencies. Adding a machine
+preserves the existing flake and lock; custom template inputs must already be
+available in that root. Export the whole project and select `.#<name>` to build
+an individual machine with its shared sources intact.
 
 The top-level `nixpkgs` input remains available for Ryra's security-update command;
 the shared input follows it. Opt-in automatic updates refresh both `nixpkgs` and
@@ -58,6 +64,7 @@ Validation:
 
 ```sh
 python3 tests/check_templates.py
+nix eval --impure --json --file tests/organization.nix
 python3 tests/check_access.py
 python3 tests/check_shared_folders.py
 PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s tests -v
@@ -91,7 +98,6 @@ GitHub API, or laptop scheduler is needed. In a copied machine configuration:
   services.ryra-update = {
     enable = true;
     repository = "ssh://git@forge.example/team/infrastructure.git";
-    directory = "machines/server"; # Omit for a repository containing just this machine.
     gitKeyFile = config.sops.secrets.update-git.path;
     authorEmail = "updates@example.com";
   };
@@ -103,8 +109,8 @@ The key needs write access only to this repository. Register its public half for
 SSH commit-signature verification on your forge. Only changed pins create a
 commit. By default, `nixpkgs` and `ryra-template` update daily at 03:10 with up to ten minutes of
 jitter; `herdr-pkgs` stays pinned. Set `inputs = [ "nixpkgs" ];` to retain the
-current template and Ryra version. Each machine must have
-its own flake directory and lockfile.
+current template and Ryra version. Machines share the organization's root lockfile;
+each updater builds its own named configuration.
 Like ryra-org, missed update windows do not trigger catch-up builds when a stopped
 machine starts; updates wait for the next scheduled window.
 

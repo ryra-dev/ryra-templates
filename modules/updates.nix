@@ -1,4 +1,4 @@
-{ config, lib, pkgs, machineDir, ... }:
+{ config, lib, pkgs, self, ... }:
 let
   cfg = config.services.ryra-update;
   validDirectory = cfg.directory == "." || builtins.match "[A-Za-z0-9_-]+(/[A-Za-z0-9_-]+)*" cfg.directory != null;
@@ -32,7 +32,7 @@ in {
     branch = lib.mkOption { type = lib.types.str; default = "main"; };
     reviewedSource = lib.mkOption {
       type = lib.types.path;
-      default = machineDir;
+      default = self;
       description = "Deployed flake source. Automatic updates refuse changes outside its lockfile.";
     };
     directory = lib.mkOption { type = lib.types.str; default = "."; description = "Relative flake directory in the repository."; };

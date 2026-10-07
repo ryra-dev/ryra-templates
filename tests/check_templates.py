@@ -1,4 +1,4 @@
-"""Verify shared modules preserve each preset and copied configurations stand alone."""
+"""Verify presets and the organization assembled from a template."""
 import json
 from pathlib import Path
 import shutil
@@ -9,6 +9,9 @@ ROOT = Path(__file__).resolve().parents[1]
 
 def run(*args, **kwargs):
     return subprocess.check_output(args, text=True, **kwargs)
+
+run('nix', 'eval', '--impure', '--json', '--file', str(ROOT / 'tests/organization.nix'))
+print('Organization: named machines, shared sources, SOPS paths and root updates passed', flush=True)
 
 configs = json.loads(run('nix', 'eval', '--impure', '--json', '--file', str(ROOT / 'tests/templates.nix')))
 for name, config in configs.items():
@@ -33,11 +36,16 @@ for name, config in configs.items():
 with tempfile.TemporaryDirectory(prefix='ryra-copied-template-') as directory:
     copied = Path(directory)
     # Exercise the actual Nix template API, not an in-repository relative import.
-    run('nix', 'flake', 'init', '--template', f'path:{ROOT}#default', cwd=copied)
-    (copied / 'hostname').write_text('detached\n')
-    (copied / 'modules/machine.nix').write_text('{ ... }: { time.timeZone = "Europe/Oslo"; i18n.defaultLocale = "nb_NO.UTF-8"; }\n')
-    (copied / 'modules/generated.nix').write_text('{ ... }: { environment.variables.RYRA_COPY_TEST = "present"; nix.settings.max-jobs = 3; nix.settings.cores = 4; }\n')
-    run('nix', 'flake', 'lock', '--override-input', 'ryra-template', f'path:{ROOT}', cwd=copied)
+    machine = copied / 'machines/detached'
+    machine.mkdir(parents=True)
+    run('nix', 'flake', 'init', '--template', f'path:{ROOT}#default', cwd=machine)
+    (machine / 'flake.nix').rename(copied / 'flake.nix')
+    (copied / 'organization.toml').write_text('[org]\nname = "Test"\n[[machines]]\nname = "detached"\nfrom = "needed"\ntemplate = "ryra/base"\n')
+    (machine / 'modules/machine.nix').write_text('{ ... }: { time.timeZone = "Europe/Oslo"; i18n.defaultLocale = "nb_NO.UTF-8"; }\n')
+    (machine / 'modules/generated.nix').write_text('{ ... }: { environment.variables.RYRA_COPY_TEST = "present"; nix.settings.max-jobs = 3; nix.settings.cores = 4; }\n')
+    nixpkgs = run('nix', 'eval', '--impure', '--raw', '--expr', f'(builtins.getFlake "path:{ROOT}").inputs.nixpkgs.outPath')
+    run('nix', 'flake', 'lock', '--override-input', 'ryra-template', f'path:{ROOT}',
+        '--override-input', 'nixpkgs', f'path:{nixpkgs}', cwd=copied)
     output = json.loads(run('nix', 'eval', '--json', '--override-input', 'ryra-template', f'path:{ROOT}',
         f'path:{copied}#nixosConfigurations.detached.config', '--apply',
         'c: { host = c.networking.hostName; generated = c.environment.variables.RYRA_COPY_TEST; system = c.nixpkgs.hostPlatform.system; timeZone = c.time.timeZone; locale = c.i18n.defaultLocale; buildJobs = c.nix.settings.max-jobs; buildCores = c.nix.settings.cores; }'))
@@ -48,4 +56,4 @@ with tempfile.TemporaryDirectory(prefix='ryra-copied-template-') as directory:
     shared = lock['nodes'][root_inputs['ryra-template']]
     assert shared['inputs']['nixpkgs'] == ['nixpkgs']
     assert not any(path.is_symlink() for path in copied.rglob('*'))
-    print('Detached template: hostname, generated modules and nixpkgs update compatibility passed')
+    print('Organization template: named output, generated modules and root pins passed')
