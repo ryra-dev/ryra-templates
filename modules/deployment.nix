@@ -17,8 +17,12 @@ let
   ] ++ cfg.beforeSwitch);
   health = script "ryra-deploy-health" ([
     "systemctl is-active --quiet multi-user.target"
-    (lib.optionalString (cfg.requiredUnits != [])
-      "systemctl is-active --quiet ${lib.escapeShellArgs cfg.requiredUnits}")
+    (lib.concatMapStringsSep "\n" (unit: ''
+      if ! systemctl is-active --quiet ${lib.escapeShellArg unit}; then
+        printf '%s\n' ${lib.escapeShellArg "Required service is not active: ${unit}"} >&2
+        exit 1
+      fi
+    '') cfg.requiredUnits)
   ] ++ cfg.healthChecks);
 in {
   options.ryra.deployment = {

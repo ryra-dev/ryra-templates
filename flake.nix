@@ -116,5 +116,8 @@
       checks.x86_64-linux.computer-control = import ./tests/computer-control.nix {
         desktop = (mkMachine { self = ./machines/desktop; }).nixosConfigurations.machine;
       };
+      checks.x86_64-linux.deployment-health = import ./tests/deployment.nix {
+        pkgs = nixpkgs.legacyPackages.x86_64-linux;
+      };
     };
 }
