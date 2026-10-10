@@ -107,7 +107,31 @@ phone into Tailscale.
 To restore public SSH, set `ryra.access.publicSSH = true` while you still have
 private access and deploy. You can then disable Tailscale in a subsequent change.
 
-## Checks
+## App access
+
+Catalog web apps use nginx and listen on loopback by default. Open their address
+from `/etc/ryra/apps.json` through Ryra's encrypted connection to the machine.
+Public access is explicit in `modules/ryra/web.json`:
+
+```json
+{ "ryra/linkding": { "access": "public", "domain": "bookmarks.example.com" } }
+```
+
+Point the domain at the machine and allow ports 80 and 443 through the hosting
+provider's firewall. NixOS opens its own web ports, configures the app route,
+requests the certificate and renews it automatically. Application logins remain
+enabled. Private apps can choose a different loopback port with
+`{ "access": "private", "port": 8083 }`; ports 80 and 443 are reserved for public
+web access. These choices are part of the exported organization configuration.
+
+`nix eval --impure --json --expr 'import ./tests/hosting.nix {}'` checks routing and
+HTTPS configuration without building a VM. On a Linux x86-64 host with Nix and
+KVM, `bash tests/hosting/run.sh` tests real sign-in, backup restore, HTTPS issuance
+and renewal against a disposable ACME server, and cold boot. An optional flake
+reference selects a local service checkout, for example `path:/work/ryra-services`.
+The test generates its own credentials and removes its VM and disk on exit.
+
+## Network policy checks
 
 `python3 tests/check_access.py` evaluates all four templates in public, private,
 and enrollment modes and checks that unsafe SSH rules and missing enrollment

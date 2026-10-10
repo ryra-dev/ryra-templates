@@ -1,10 +1,15 @@
 let
   flake = builtins.getFlake ("path:" + toString ../.);
   names = [ "base" "base-arm" "azure" "desktop" "lima" "lima-intel" ];
+  withoutApps = (flake.lib.mkMachine {
+    self = ../machines/base;
+    modules = [{ disabledModules = [ (flake.outPath + "/modules/services.nix") ]; }];
+  }).nixosConfigurations.machine.config;
   inspect = name:
     let
       c = (flake.lib.mkMachine { self = ../machines + "/${name}"; }).nixosConfigurations.machine.config;
     in
+    assert builtins.all (agent: builtins.any (p: (p.pname or p.name) == agent) c.environment.systemPackages) [ "codex" "claude-code" ];
     assert !c.ryra.desktop.enable || (
       c.services.desktopManager.gnome.enable
       && !c.services.desktopManager.gnome.flashback.enableMetacity
@@ -42,4 +47,6 @@ let
       timeZone = c.time.timeZone;
       locale = c.i18n.defaultLocale;
     };
-in builtins.listToAttrs (map (name: { inherit name; value = inspect name; }) names)
+in
+assert builtins.all (p: !builtins.elem (p.pname or p.name) [ "codex" "claude-code" ]) withoutApps.environment.systemPackages;
+builtins.listToAttrs (map (name: { inherit name; value = inspect name; }) names)

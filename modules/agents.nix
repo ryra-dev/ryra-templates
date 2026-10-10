@@ -1,4 +1,4 @@
-# The agents, and the adapters ryra speaks to them through.
+# The adapters Ryra uses to speak to agents installed through the service catalog.
 #
 # Ryra drives an agent over ACP rather than over its terminal, which is what makes a session
 # structured instead of a wall of characters. Neither CLI speaks it: `codex` offers `mcp`,
@@ -12,8 +12,6 @@
 { pkgs, ... }:
 {
   environment.systemPackages = with pkgs; [
-    claude-code
-    codex
     (import ../agent-runtime { inherit pkgs; })
   ];
 }
