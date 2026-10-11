@@ -50,6 +50,46 @@ configuration in a copied machine's `configuration.nix` or `modules/` directory.
 All `.nix` files under that directory are imported except service `settings.nix`,
 which is consumed by the service module.
 
+In `modules/ryra/settings.nix`, `auth.provider` maps to the published
+`ryra.services.auth.provider` options, including with no enabled apps:
+
+```nix
+{
+  auth.provider = {
+    enable = true;
+    issuerUrl = "https://login.example.com";
+    cookieDomain = "example.com";
+    ldap = {
+      baseDn = "dc=example,dc=com";
+      bindDn = "uid=authelia,ou=people,dc=example,dc=com";
+      adminEmail = "directory-admin@example.com";
+    };
+    secrets = {
+      jwtSecretFile = "/run/secrets/authelia-jwt";
+      sessionSecretFile = "/run/secrets/authelia-session";
+      storageEncryptionKeyFile = "/run/secrets/authelia-storage";
+      oidcHmacSecretFile = "/run/secrets/authelia-hmac";
+      oidcIssuerPrivateKeyFile = "/run/secrets/authelia-signing.pem";
+      ldapBindPasswordFile = "/run/secrets/lldap-bind";
+      ldapAdminPasswordFile = "/run/secrets/lldap-admin";
+      ldapJwtSecretFile = "/run/secrets/lldap-jwt";
+      ldapKeySeedEnvironmentFile = "/run/secrets/lldap.env";
+    };
+    clientSecrets.nextcloud = {
+      clientSecretFile = "/run/secrets/nextcloud-oidc";
+      secretHashFile = "/run/secrets/nextcloud-oidc-hash";
+    };
+  };
+}
+```
+
+Supply runtime secret files through the declaration's existing secrets flow,
+including each OIDC app's plaintext client-secret file and matching hash file.
+Never put secret contents in settings or the Nix store. Enabled supported apps
+automatically select OIDC; set `"ryra/nextcloud".auth.mode = "none"` to opt out.
+Declare stable HTTPS app origins through the existing web configuration, and
+declare directory bootstrap, access policy and HTTPS routing in machine modules.
+
 The shared defaults include zram, earlyoom, SSH scheduling and memory protection,
 lower build scheduling weights, low-disk Nix garbage collection, a journal cap,
 and daily pruning of deployment snapshots older than 30 days while retaining the

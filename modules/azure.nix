@@ -1,5 +1,5 @@
 # Azure Gen 2 / x86-64 / SCSI OS disk. The installer verifies these assumptions.
-{ lib, modulesPath, ... }:
+{ config, lib, modulesPath, ... }:
 {
   imports = [ (modulesPath + "/virtualisation/azure-common.nix") ];
 
@@ -8,6 +8,8 @@
   # recreate the old image's users, SSH keys or host keys on this existing VM.
   services.cloud-init.enable = lib.mkForce false;
   services.cloud-init.network.enable = lib.mkForce false;
+  # azure-common declares Restart even when cloud-init is disabled, leaving an empty unit.
+  systemd.services.cloud-config.enable = config.services.cloud-init.enable;
   services.waagent.settings = {
     Provisioning.Enable = false;
     Provisioning.Enabled = false;

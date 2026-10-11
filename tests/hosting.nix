@@ -1,29 +1,30 @@
-{ serviceSource ? null }:
+{ serviceSource ? null, machineDir ? ./hosting/machine }:
 let
   templates = builtins.getFlake ("path:" + toString ../.);
   services = if serviceSource == null then templates.inputs.ryra-services
     else builtins.getFlake serviceSource;
   lib = templates.inputs.nixpkgs.lib;
   machine = web: templates.lib.mkMachine {
-    self = ./hosting/machine;
+    self = machineDir;
     inputs.ryra-services = services;
     modules = [
       ({ ... }: {
-        sops.defaultSopsFile = builtins.toFile "hosting-secrets.yaml" "{}";
+        system.stateVersion = lib.mkForce "26.05";
+        sops.defaultSopsFile = lib.mkForce (builtins.toFile "hosting-secrets.yaml" "{}");
         sops.validateSopsFiles = false;
-        ryra.services.web.linkding = web;
+        ryra.services.web.linkding = lib.mapAttrs (_: lib.mkForce) web;
       })
     ];
   };
   c = (machine {}).nixosConfigurations.machine.config;
-  p = (machine { access = "public"; domain = "bookmarks.example.com"; }).nixosConfigurations.machine.config;
+  p = (machine { access = "public"; domain = "bookmarks.example.com"; externalUrl = null; }).nixosConfigurations.machine.config;
   failures = map (a: a.message) (builtins.filter (a: !a.assertion) c.assertions);
 in
 assert failures == [];
 assert builtins.all (a: a.assertion) p.assertions;
 assert c.services.nginx.enable && c.services.postgresql.enable;
 assert c.services.nextcloud.database.createLocally;
-assert !c.services.authelia.instances ? main;
+assert c.ryra.services.auth.provider.enable == builtins.hasAttr c.ryra.services.auth.provider.instance c.services.authelia.instances;
 assert c.services.nginx.virtualHosts."linkding.localhost".listen == [
   { addr = "127.0.0.1"; port = 8081; ssl = false; extraParameters = []; proxyProtocol = false; }
 ];
@@ -45,4 +46,7 @@ assert p.ryra.services.web.nextcloud.access == "private";
   nextcloudVersion = c.services.nextcloud.package.version;
   https = p.ryra.services.web.linkding.url;
   backup = c.services.restic.backups.nextcloud.paths;
+  auth = if c.ryra.services.auth.provider.enable then services.lib.checkAuth { config = c; inherit lib; } else null;
+  modes = c.ryra.services.auth.modes;
+  toplevel = c.system.build.toplevel.drvPath;
 }

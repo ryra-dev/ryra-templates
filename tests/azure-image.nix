@@ -15,6 +15,8 @@ assert failures c == [];
 assert failures updated == [];
 assert failures withCustomer != [];
 assert c.services.cloud-init.enable && !assigned.config.services.cloud-init.enable;
+assert c.systemd.services.cloud-config.enable && !assigned.config.systemd.services.cloud-config.enable;
+assert !(builtins.any (p: (p.pname or "") == "ryra") c.environment.systemPackages);
 assert c.services.cloud-init.settings.datasource_list == [ "Azure" ];
 assert c.services.waagent.settings.Extensions.Enabled;
 assert !c.services.ryra-update.enable && !c.system.autoUpgrade.enable;
@@ -30,6 +32,6 @@ assert c.boot.loader.grub.devices == [ "nodev" ];
 {
   image = c.system.build.azureImage.drvPath;
   inherit (c.disko.devices.disk.main) imageSize;
-  runtime = (builtins.head (builtins.filter (p: (p.pname or "") == "ryra") c.environment.systemPackages)).version;
+  runtime = image._module.args.ryraPackage.version;
   success = true;
 }
