@@ -1,26 +1,5 @@
-# The `ryra` command itself, on the machine.
-#
-# So that somebody who has ssh'd in to fix something can put the fix back where it belongs. The
-# break-glass edit in `/etc/nixos` is a REPAIR and is replaced by the next push; without this
-# there is no way to promote one from the box, and the only route to a permanent change is a
-# laptop somebody may not have with them.
-#
-# It carries NO credential. The binary is inert until a person signs in as themselves, which is
-# the same flow and the same scope a laptop uses. Putting the command here does not make this
-# machine able to change the organization; it makes the person at it able to, which they already
-# were from somewhere else.
-#
-# From the signed static Linux runtime. Ryra's proprietary source stays private;
-# this executable needs no foreign dynamic linker on NixOS.
-#
-# PINNED, and it has to be bumped when ryra is released: a `fetchurl` needs a hash, so "latest"
-# is not expressible here. The same shape as the herdr pin above it, and no longer the slack one:
-# `updates.nix` runs this binary, so a version older than the subcommand it calls is a timer that
-# fails every night. 0.1.6 was pinned here while `machines update` existed only on main, and the
-# unit died with "unrecognized subcommand" at the first run.
-#
-# This assumes the pool keeps what it has published. If a version is ever removed from
-# pkg.ryra.dev, every machine pinned to it stops building.
+# Internal units use an immutable static runtime, independent of the client-prepared runtime.
+# Published archives must remain available for machines pinned to them.
 { lib, pkgs, ... }:
 let
   version = "0.1.61";
@@ -73,10 +52,5 @@ let
   };
 in
 {
-  environment.systemPackages = [ ryra ];
-
-  # For units that run it. `environment.systemPackages` puts a binary on a
-  # person's PATH and NOT on a systemd unit's, so `updates.nix` asking for
-  # `ryra` by name would have failed every night with "command not found".
   _module.args.ryraPackage = ryra;
 }

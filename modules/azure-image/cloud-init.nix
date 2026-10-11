@@ -27,7 +27,6 @@
       test -f /var/lib/cloud/instance/boot-finished || { echo "Initial computer setup is still running" >&2; exit 1; }
       cloud-init status --format json >/dev/null
       herdr --version >/dev/null
-      ryra --version >/dev/null
       command -v ryra-desktop >/dev/null
       systemctl cat ryra-desktop@.service >/dev/null
       if [ "$(id -u)" != 0 ]; then
