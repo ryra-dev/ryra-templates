@@ -141,11 +141,11 @@
         "nixpkgs": "nixpkgs_2"
       },
       "locked": {
-        "lastModified": 1791806089,
-        "narHash": "sha256-rNs9eHXgh/XRSPE1DVuNhnHk8RD6IF0+m7lI3Ty6/MA=",
+        "lastModified": 1791819336,
+        "narHash": "sha256-KRZhGFQ/dkQueKut4xsubGs0O5zLlRnSG2CI4odo5Vo=",
         "owner": "ryra-dev",
         "repo": "ryra-services",
-        "rev": "2209656e84990859f76f20f244dba3563628aac9",
+        "rev": "ab27cc30fc3db9ebe46063805e98340dbc209291",
         "type": "github"
       },
       "original": {

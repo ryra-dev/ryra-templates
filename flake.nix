@@ -146,6 +146,7 @@
       };
       checks.x86_64-linux.deployment-health = import ./tests/deployment.nix {
         pkgs = nixpkgs.legacyPackages.x86_64-linux;
+        machine = mkMachine { self = ./tests/guided-network/machine; };
       };
     };
 }

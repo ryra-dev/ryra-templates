@@ -107,6 +107,7 @@ in {
     };
     services.nginx = {
       enable = true;
+      serverNamesHashBucketSize = lib.mkDefault 128;
       virtualHosts = challengeHosts // {
         ryra-https-bootstrap-default = {
           serverName = "_";
