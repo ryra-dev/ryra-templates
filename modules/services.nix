@@ -35,6 +35,7 @@ let
       }) [ "0.0.0.0" "[::]" ]
       && vhost.sslCertificate == "/run/credentials/nginx.service/ryra-issuer-cert"
       && vhost.sslCertificateKey == "/run/credentials/nginx.service/ryra-issuer-key"
+      && (config.systemd.services.nginx.serviceConfig.RefreshOnReload or "extensions") == "extensions credentials"
       && config.systemd.services.nginx.serviceConfig.LoadCredential == [
         "ryra-issuer-cert:/var/lib/ryra-issuer-tls/server.pem"
         "ryra-issuer-key:/var/lib/ryra-issuer-tls/server.key"

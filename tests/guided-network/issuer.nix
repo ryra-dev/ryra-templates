@@ -9,6 +9,7 @@
   };
   systemd.tmpfiles.rules = [ "Z /var/lib/ryra-ssh-issuer 0700 ryra-ssh-issuer ryra-ssh-issuer -" ];
   services.nginx.enable = true;
+  systemd.services.nginx.serviceConfig.RefreshOnReload = "extensions credentials";
   systemd.services.nginx.serviceConfig.LoadCredential = [
     "ryra-issuer-cert:/var/lib/ryra-issuer-tls/server.pem"
     "ryra-issuer-key:/var/lib/ryra-issuer-tls/server.key"

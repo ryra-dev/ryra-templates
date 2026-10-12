@@ -17,6 +17,8 @@ let
       services.nginx.virtualHosts.ryra-issuer.locations."/certificate".proxyPass = lib.mkForce "http://127.0.0.1:8083";
     }) ++ lib.optional (custom == "issuer_credentials") ({ lib, ... }: {
       systemd.services.nginx.serviceConfig.LoadCredential = lib.mkForce [ "ryra-issuer-cert:/tmp/custom.pem" ];
+    }) ++ lib.optional (custom == "issuer_reload") ({ lib, ... }: {
+      systemd.services.nginx.serviceConfig.RefreshOnReload = lib.mkForce "extensions";
     }) ++ lib.optional (custom == "issuer_disabled") ({ lib, ... }: {
       services.ryraSshIssuer.enable = lib.mkForce false;
     }) ++ lib.optional (custom == "issuer_bind") ({ lib, ... }: {
@@ -81,7 +83,7 @@ assert let endpoint = config: with config.services.nginx.virtualHosts.ryra-issue
 assert issuerBootstrap.systemd.services.ryra-ssh-issuer.serviceConfig.ExecStart
   == issuerConfigurations.machine.config.systemd.services.ryra-ssh-issuer.serviceConfig.ExecStart;
 assert builtins.all (custom: failures (machine custom).nixosConfigurations.machine-https-bootstrap.config != [])
-  [ "issuer_listener" "issuer_route" "issuer_proxy" "issuer_credentials" "issuer_disabled"
+  [ "issuer_listener" "issuer_route" "issuer_proxy" "issuer_credentials" "issuer_reload" "issuer_disabled"
     "issuer_bind" "issuer_certificate" "issuer_body" "issuer_location" ];
 assert !(builtins.tryEval (machine "custom_origin").nixosConfigurations.machine-https-bootstrap.config.assertions).success;
 {
