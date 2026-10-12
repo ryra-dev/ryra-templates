@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
-while IFS= read -r variable; do
+while IFS='=' read -r variable _; do
   case "$variable" in
     HERDR_*|RYRA_HERDR_*|*_PANE_ID|*_SESSION_ID|*_TAB_ID|*_WORKSPACE_ID|DBUS_SESSION_BUS_ADDRESS) unset "$variable" ;;
   esac
-done < <(compgen -e)
+done < <(env)
 [[ "$(uname -s)" == Linux && "$(uname -m)" == x86_64 && -r /dev/kvm && -w /dev/kvm ]] || {
   echo 'Run this check on a Linux x86-64 host with access to /dev/kvm.' >&2
   exit 1
