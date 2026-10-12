@@ -20,6 +20,35 @@ let
   ) (builtins.filter (site: (site.privateHttps or false) && (site.access or "private") == "private") phaseSites)));
   webroot = "/var/lib/acme/acme-challenge";
   challengeNames = map (host: "ryra-https-bootstrap-${host}") hosts;
+  issuer = config.services.ryraSshIssuer or {};
+  issuerPresent = config.services.nginx.virtualHosts ? ryra-issuer;
+  safeIssuer = let vhost = config.services.nginx.virtualHosts.ryra-issuer;
+    in (issuer.enable or false) && issuer.listen == "127.0.0.1:8788"
+      && vhost.serverName == null && vhost.serverAliases == [] && vhost.listenAddresses == []
+      && vhost.onlySSL && !vhost.addSSL && !vhost.forceSSL && !vhost.rejectSSL
+      && !vhost.enableACME && vhost.useACMEHost == null
+      && !vhost.default && vhost.root == null && vhost.globalRedirect == null
+      && vhost.basicAuth == {} && vhost.basicAuthFile == null
+      && !vhost.quic && !vhost.http3_hq && !vhost.reuseport && vhost.sslTrustedCertificate == null
+      && vhost.listen == map (addr: {
+        inherit addr; port = 8789; ssl = true; proxyProtocol = false; extraParameters = [];
+      }) [ "0.0.0.0" "[::]" ]
+      && vhost.sslCertificate == "/run/credentials/nginx.service/ryra-issuer-cert"
+      && vhost.sslCertificateKey == "/run/credentials/nginx.service/ryra-issuer-key"
+      && config.systemd.services.nginx.serviceConfig.LoadCredential == [
+        "ryra-issuer-cert:/var/lib/ryra-issuer-tls/server.pem"
+        "ryra-issuer-key:/var/lib/ryra-issuer-tls/server.key"
+      ]
+      && vhost.extraConfig == "client_max_body_size 16k;"
+      && builtins.attrNames vhost.locations == [ "/" "/certificate" ]
+      && vhost.locations."/".return == "404" && vhost.locations."/".proxyPass == null
+      && vhost.locations."/certificate".proxyPass == "http://127.0.0.1:8788"
+      && vhost.locations."/certificate".return == null
+      && builtins.all (location: location.extraConfig == "" && location.root == null
+        && location.alias == null && location.uwsgiPass == null && location.tryFiles == null
+        && location.index == null && location.fastcgiParams == {} && !location.proxyWebsockets
+        && !location.useGrpcErrorPages && location.basicAuth == {} && location.basicAuthFile == null
+      ) (lib.attrValues vhost.locations);
   challengeHosts = lib.listToAttrs (map (host: lib.nameValuePair "ryra-https-bootstrap-${host}" {
     serverName = host;
     listen = [ { addr = "0.0.0.0"; port = 80; } ];
@@ -59,7 +88,8 @@ in {
     assertions = [
       { assertion = hosts != [];
         message = "HTTPS bootstrap requires reviewed private HTTPS origins."; }
-      { assertion = builtins.attrNames config.services.nginx.virtualHosts == builtins.sort builtins.lessThan ([ "ryra-https-bootstrap-default" ] ++ challengeNames)
+      { assertion = builtins.attrNames config.services.nginx.virtualHosts == builtins.sort builtins.lessThan ([ "ryra-https-bootstrap-default" ] ++ challengeNames ++ lib.optional issuerPresent "ryra-issuer")
+          && (!issuerPresent || safeIssuer)
           && config.services.nginx.httpConfig == "" && config.services.nginx.appendHttpConfig == ""
           && config.services.nginx.streamConfig == "" && config.services.nginx.appendConfig == ""
           && config.services.nginx.config == "" && config.services.nginx.commonHttpConfig == "";
