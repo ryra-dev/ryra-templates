@@ -1,0 +1,1 @@
+{"nextcloud":{"repository":"rest:https://api.example.test/v1/orgs/test/backups/machine-nextcloud/","environmentFile":"/run/secrets/backup-nextcloud"}}

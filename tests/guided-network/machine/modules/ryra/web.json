@@ -1,0 +1,1 @@
+{"ryra/grafana":{"access":"private","privateHttps":true,"port":8083,"externalUrl":"https://machine.example.com:8083"},"ryra/authelia":{"access":"private","privateHttps":true,"port":8084,"externalUrl":"https://machine.example.com:8084"}}

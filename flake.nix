@@ -30,9 +30,11 @@
         let
           sources = sharedInputs // inputs;
           registries = import (machineDir + "/registries.nix") sources;
-          machine = nixpkgs.lib.nixosSystem {
+          bootstrapPorts = machineDir + "/modules/ryra/https-bootstrap-ports.nix";
+          make = phase: extraModules: nixpkgs.lib.nixosSystem {
             specialArgs = specialArgs // {
               inherit self hostName machineDir;
+              ryraServicePhase = phase;
               ryraModules = sharedInputs.self.nixosModules;
               serviceRegistries = registries;
               serviceModule = sources.ryra-services.nixosModules.services;
@@ -45,12 +47,34 @@
                 _module.args.cuaDriver = sources.cua.packages.${config.nixpkgs.hostPlatform.system}.cua-driver;
                 _module.args.cuaGnomeExtension = sources.cua + "/libs/cua-driver/wayland-helper/winrects@cua";
               })
-            ] ++ modules ++ builtins.filter
-              (path: path != machineDir + "/modules/ryra/settings.nix" && nixpkgs.lib.hasSuffix ".nix" (toString path))
+            ] ++ modules ++ extraModules ++ builtins.filter
+              (path: path != machineDir + "/modules/ryra/settings.nix"
+                && path != bootstrapPorts
+                && (phase != "https_bootstrap" || path != machineDir + "/modules/ryra-ports.nix")
+                && nixpkgs.lib.hasSuffix ".nix" (toString path))
               (nixpkgs.lib.filesystem.listFilesRecursive (machineDir + "/modules"));
           };
+          machine = make "final" [];
+          bootstrap = make "https_bootstrap" [ bootstrapPorts ({ config, lib, ... }: {
+            environment.etc."ryra/deploy/preflight".source = lib.mkForce machine.config.environment.etc."ryra/deploy/preflight".source;
+            assertions = [ {
+              assertion = (builtins.fromJSON config.environment.etc."ryra/service-network.json".text).challenge_hosts
+                == (builtins.fromJSON machine.config.environment.etc."ryra/service-network.json".text).challenge_hosts;
+              message = "Custom service settings changed the private HTTPS challenge hosts. Review explicit origins before preparing ingress.";
+            } ];
+            # Native account defaults win for users already declared by the base.
+            users.users = nixpkgs.lib.mapAttrs (_: user: lib.mapAttrs (_: lib.mkOverride 1400) {
+              inherit (user) isSystemUser uid group extraGroups home createHome homeMode shell;
+            }) (nixpkgs.lib.filterAttrs (_: user: !user.isNormalUser) machine.config.users.users);
+            users.groups = nixpkgs.lib.mapAttrs (_: group: lib.mapAttrs (_: lib.mkOverride 1400) {
+              inherit (group) gid members;
+            }) machine.config.users.groups;
+          }) ];
         in {
-          nixosConfigurations.${hostName} = machine;
+          nixosConfigurations = { ${hostName} = machine; }
+            // nixpkgs.lib.optionalAttrs (builtins.pathExists bootstrapPorts) {
+              "${hostName}-https-bootstrap" = bootstrap;
+            };
           ryraCatalog = builtins.mapAttrs (_: source: {
             flake = "path:${source.outPath}";
             index = source.index;
@@ -78,7 +102,11 @@
             (self + "/${machine.config or "machines/${machine.name}"}/configuration.nix"))
             (declaration.machines or [])));
         in {
-          nixosConfigurations = builtins.mapAttrs (name: machine: machine.nixosConfigurations.${name}) machines;
+          nixosConfigurations = nixpkgs.lib.foldl' (outputs: machine:
+            if builtins.any (name: outputs ? ${name}) (builtins.attrNames machine.nixosConfigurations)
+            then throw "Ryra machine names collide with a generated HTTPS bootstrap output. Rename the conflicting machine."
+            else outputs // machine.nixosConfigurations
+          ) {} (builtins.attrValues machines);
           ryraCatalog = builtins.mapAttrs (_: machine: machine.ryraCatalog) machines;
         };
     in {

@@ -49,9 +49,14 @@
 #
 # `nix/host.nix` in the ryra repo stays on ZFS deliberately. That box is larger,
 # it runs Postgres, and there the ARC earns the memory it takes.
-{ lib, pkgs, ... }:
+{ config, lib, pkgs, ... }:
 let bios = pkgs.stdenv.hostPlatform.isx86_64; in
 {
+  imports = [{ options.ryra.hardware.biosBoot = lib.mkOption {
+    type = lib.types.bool;
+    default = bios;
+    description = "Include a BIOS boot partition alongside the EFI system partition.";
+  }; }];
   boot.loader.grub = {
     enable = true;
     efiSupport = true;
@@ -91,7 +96,7 @@ let bios = pkgs.stdenv.hostPlatform.isx86_64; in
         # 1 MB, no filesystem, type ef02. GRUB puts its core image here when the
         # firmware is BIOS and the table is GPT: without it, a BIOS machine has
         # nowhere to boot from on a GPT disk and fails silently at install time.
-        boot = lib.mkIf bios {
+        boot = lib.mkIf config.ryra.hardware.biosBoot {
           size = "1M";
           type = "EF02";
           priority = 1;

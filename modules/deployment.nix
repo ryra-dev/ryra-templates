@@ -1,7 +1,8 @@
 { config, lib, pkgs, ... }:
 let
   cfg = config.ryra.deployment;
-  backups = lib.attrValues (lib.attrByPath [ "ryra" "services" "backup" "results" ] {} config);
+  backups = builtins.filter (backup: backup.backupService != null)
+    (lib.attrValues (lib.attrByPath [ "ryra" "services" "backup" "results" ] {} config));
   script = name: commands: pkgs.writeShellApplication {
     inherit name;
     runtimeInputs = [ pkgs.systemd pkgs.curl pkgs.coreutils ];

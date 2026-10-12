@@ -1,0 +1,1 @@
+{"ryra/nextcloud":{"privateHttps":true,"externalUrl":"https://apps.example.test:8443"},"ryra/grafana":{"privateHttps":true,"externalUrl":"https://apps.example.test:8444"},"ryra/authelia":{"privateHttps":true,"externalUrl":"https://apps.example.test:8445"},"ryra/linkding":{"privateHttps":true,"externalUrl":"https://apps.example.test:8446"}}

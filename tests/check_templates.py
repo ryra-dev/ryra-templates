@@ -18,7 +18,7 @@ for name, config in configs.items():
     assert not config['failures'], (name, config['failures'])
     assert config['system'] == ('aarch64-linux' if name in ('base-arm', 'lima') else 'x86_64-linux'), name
     assert set(config['grub']) == (set() if name.startswith('lima') else {'nodev'} if name in ('base-arm', 'azure') else {'/dev/sda'}), name
-    assert config['biosPartition'] == (name not in ('base-arm', 'lima', 'lima-intel')), name
+    assert config['biosPartition'] == (name not in ('base-arm', 'azure', 'lima', 'lima-intel')), name
     assert config['lima'] == name.startswith('lima'), name
     if name.startswith('lima'):
         assert config['bootPaths'] == [{'path': '/boot-nixos', 'efiSysMountPoint': '/boot', 'devices': ['nodev']}], name
