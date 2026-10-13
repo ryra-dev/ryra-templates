@@ -25,7 +25,7 @@
 
   outputs = { self, nixpkgs, disko, sops-nix, ... }@sharedInputs:
     let
-      names = [ "base" "base-arm" "azure" "desktop" "lima" "lima-intel" ];
+      names = [ "base" "base-arm" "azure" "desktop" "lima" "lima-intel" "qemu" ];
       mkMachine = { self, inputs ? {}, machineDir ? self, hostName ? "machine", modules ? [], specialArgs ? {} }:
         let
           sources = sharedInputs // inputs;
@@ -117,6 +117,7 @@
         };
         azure = import ./modules/azure.nix;
         azure-image = import ./modules/azure-image;
+        qemu = import ./modules/qemu.nix;
         lima-boot = import ./modules/lima-boot.nix;
         lima = {
           imports = [

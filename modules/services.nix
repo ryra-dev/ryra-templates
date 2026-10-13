@@ -11,13 +11,14 @@ let
   backups = if builtins.pathExists backupPath then builtins.fromJSON (builtins.readFile backupPath) else {};
   websites = lib.attrValues (config.ryra.services.web or {});
   bootstrap = ryraServicePhase == "https_bootstrap";
-  phaseSites = if bootstrap then map (name: web.${name} or {}) enabled else websites;
+  phaseSites = if bootstrap then map (name: (settings.${name}.web or {}) // (web.${name} or {})) enabled else websites;
   hosts = builtins.sort builtins.lessThan (lib.unique (map (site:
     let url = site.externalUrl or null;
       origin = if url == null then null else builtins.match "https://([a-zA-Z0-9.-]+)(:[0-9]+)?" url;
     in if origin == null then throw "Review a concrete private HTTPS hostname before preparing challenge ingress."
       else builtins.head origin
-  ) (builtins.filter (site: (site.privateHttps or false) && (site.access or "private") == "private") phaseSites)));
+  ) (builtins.filter (site: (site.privateHttps or false) && (site.access or "private") == "private"
+    && (site.certificate.mode or "automatic") == "automatic") phaseSites)));
   webroot = "/var/lib/acme/acme-challenge";
   challengeNames = map (host: "ryra-https-bootstrap-${host}") hosts;
   issuer = config.services.ryraSshIssuer or {};
@@ -78,7 +79,7 @@ in {
         }) else settings.backup.repositories.${name} or { path = "/srv/backups/${name}"; };
       services = builtins.listToAttrs (map (name: {
         inherit name;
-        value = (settings.${name} or {}) // { web = web.${name} or {}; }
+        value = (settings.${name} or {}) // { web = (settings.${name}.web or {}) // (web.${name} or {}); }
           // lib.optionalAttrs (auth ? ${name}) {
             auth = (settings.${name}.auth or {}) // auth.${name};
           };
@@ -132,8 +133,14 @@ in {
       phase = "final"; challenge_hosts = hosts; managed_apps = enabled;
     };
     ryra.deployment.requiredUnits = lib.optional (websites != []) "nginx.service";
-    ryra.deployment.healthChecks = map (site: ''
+    ryra.deployment.healthChecks = map (site: lib.optionalString (site.access == "gateway") ''
       curl --fail --silent --show-error --max-time 10 \
+        --header ${lib.escapeShellArg "Host: ${site.domain}"} \
+        --header 'X-Forwarded-Proto: https' \
+        ${lib.escapeShellArg "http://127.0.0.1:${toString site.port}${site.healthPath}"} >/dev/null
+    '' + ''
+      curl --fail --silent --show-error --max-time 10 \
+        ${lib.optionalString (site.access == "gateway") "--retry 12 --retry-all-errors --retry-delay 5 --retry-max-time 180"} \
         ${lib.optionalString (site.access == "public") "--resolve ${lib.escapeShellArg "${site.hostName}:443:127.0.0.1"}"} \
         ${lib.escapeShellArg (site.url + site.healthPath)} >/dev/null
     '') websites;
