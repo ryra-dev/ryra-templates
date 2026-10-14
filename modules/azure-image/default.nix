@@ -7,7 +7,7 @@ let
     && user.openssh.authorizedKeys.keyFiles == []
   ) (lib.attrValues config.users.users);
 in {
-  imports = [ ../azure.nix ./cloud-init.nix ];
+  imports = [ ../azure.nix ../cloud-init.nix ];
 
   services.cloud-init.enable = lib.mkOverride 40 true;
   services.cloud-init.settings.datasource_list = [ "Azure" ];
@@ -28,12 +28,6 @@ in {
       });
     };
   };
-
-  environment.systemPackages = [ (pkgs.writeShellApplication {
-    name = "ryra-pool-handoff";
-    runtimeInputs = [ pkgs.python3 pkgs.shadow pkgs.openssh pkgs.systemd pkgs.coreutils ];
-    text = ''exec python3 ${./pool-handoff.py} "$@"'';
-  }) ];
 
   assertions = [
     { assertion = config.nixpkgs.hostPlatform.system == "x86_64-linux";

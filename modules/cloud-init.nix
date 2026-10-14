@@ -1,7 +1,7 @@
-# Import alongside the matching Ryra hardware template when building a clean cloud image.
-# Hardware, disk layout and workspace packages remain owned by that template.
+# The one cloud-init for every clean Ryra image: Azure, Hetzner and Lima. Import it alongside the
+# matching hardware template; hardware, disk layout and workspace packages stay with that template.
 # This module contains no customer identity and does not create or snapshot a server.
-{ lib, pkgs, ... }:
+{ config, lib, pkgs, ... }:
 {
   services.cloud-init = {
     enable = true;
@@ -27,6 +27,7 @@
       test -f /var/lib/cloud/instance/boot-finished || { echo "Initial computer setup is still running" >&2; exit 1; }
       cloud-init status --format json >/dev/null
       herdr --version >/dev/null
+    '' + lib.optionalString config.ryra.desktop.enable ''
       command -v ryra-desktop >/dev/null
       systemctl cat ryra-desktop@.service >/dev/null
       if [ "$(id -u)" != 0 ]; then
@@ -35,6 +36,9 @@
           printf '%s\n' "$desktop_status" >&2
           exit 1
         fi
+      fi
+    '' + ''
+      if [ "$(id -u)" != 0 ]; then
         test "$(loginctl show-user "$(id -u)" -p Linger --value)" = yes || {
           echo 'Phone notifications require a persistent user session. Enable lingering for this account.' >&2
           exit 1

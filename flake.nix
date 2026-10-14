@@ -117,6 +117,7 @@
         };
         azure = import ./modules/azure.nix;
         azure-image = import ./modules/azure-image;
+        cloud-init = import ./modules/cloud-init.nix;
         qemu = import ./modules/qemu.nix;
         lima-boot = import ./modules/lima-boot.nix;
         lima = {

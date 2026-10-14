@@ -21,7 +21,7 @@ No Azure resources are created by this template.
 
 Keep accounts, keys, SOPS secrets and update credentials out of the image.
 Boot a disposable VM, verify cloud-init, `ryra-cloud-ready`, the Azure guest
-agent's Managed Run Command, and `ryra-pool-handoff --check` before marking a
+agent's Managed Run Command, and Ryra's handoff `--check` over SSH before marking a
 gallery version ready. Verify two boots produce distinct host keys. The image
 must pass Ryra's full ownership-handoff acceptance checks before use in a pool;
 Nix evaluation alone does not prove Azure boot or guest-agent compatibility.
