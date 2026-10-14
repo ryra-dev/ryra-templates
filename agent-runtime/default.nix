@@ -3,7 +3,7 @@ pkgs.buildNpmPackage {
   pname = "ryra-agent-support";
   version = "1";
   src = ./.;
-  npmDepsHash = "sha256-XtUHmEXrQDfC/AYO1HOHjDsQHoETjIu8OPJLNklj1+g=";
+  npmDepsHash = "sha256-nFUCt5tr6V4zVnpGKz6M6ockIQFd9ULQ/D1vEFxF4Ik=";
   npmFlags = [ "--ignore-scripts" ];
   dontNpmBuild = true;
   nativeBuildInputs = [ pkgs.makeWrapper ] ++ pkgs.lib.optionals pkgs.stdenv.isLinux [ pkgs.autoPatchelfHook ];
