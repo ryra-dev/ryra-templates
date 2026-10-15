@@ -4,7 +4,7 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     ryra-services.url = "github:ryra-dev/ryra-services";
-    herdr-pkgs.url = "github:NixOS/nixpkgs/c043004d1c6985732bcc1cbc5a9c9aecbbb4e0f0";
+    herdr-pkgs.url = "github:NixOS/nixpkgs/ca1659429c950a11a565b5764e37a1b704e17ec8";
     cua = {
       url = "github:trycua/cua/e88e9d899ac5effaeae38619527ebaa46b26ce72";
       inputs.nixpkgs.follows = "nixpkgs";
