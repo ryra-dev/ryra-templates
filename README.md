@@ -1,27 +1,20 @@
 # ryra-templates
 
-One root flake per organization, with shared NixOS modules and machine presets.
+One root flake per organization, with shared NixOS modules and one machine template.
 Ryra copies `templates.default` (also named `base`) into `machines/<name>` and
-uses its `flake.nix` to seed the organization root once. Edit the machine's `configuration.nix`:
+uses its `flake.nix` to seed the organization root once.
 
-```nix
-{ ... }: {
-  nixpkgs.hostPlatform = "x86_64-linux"; # Or aarch64-linux.
-  ryra.desktop.enable = true;
-  # ryra.tailscale.enable = true; # Requires an enrollment secret.
-}
+What a machine runs on is measured, not chosen. Ryra writes
+`modules/ryra/hardware.json` beside the machine's configuration:
+
+```json
+{ "system": "aarch64-linux", "platform": "lima" }
 ```
 
-For Azure, import `ryraModules.azure` in that module. The existing `base`,
-`base-arm`, `azure`, and `desktop` names retain their architecture and platform
-choices. All include the GNOME Shell remote desktop by default. The `lima`
-(Apple Silicon) and `lima-intel` presets import `ryraModules.lima` for local macOS
-VMs and keep their terminal-only defaults. They all use the same modules;
-there are no generated or separately maintained copies of the implementation.
-
-For pre-provisioned Azure computers, use the [azure-image](machines/azure-image/README.md)
-preset to build a clean Gen 2 VHD with first-boot provisioning and ownership
-handoff. It shares the machine modules above; assigned computers use `azure`.
+`mkMachine` sets `nixpkgs.hostPlatform` from `system` and imports the platform's
+module, `azure`, `lima` or `qemu`, when there is one. A machine without the file
+states its architecture itself. The desktop is on by default; the local VM
+platforms switch it off, and `ryra.desktop.enable` overrides either way.
 
 The desktop starts on demand through `ryra desktop`, with automatic sign-in
 through the machine's authenticated connection. Closing the viewer leaves the
@@ -177,6 +170,5 @@ Validate the module and its Git/health guards without changing a machine:
 
 ```sh
 nix eval --impure --json --file tests/updates.nix
-nix eval --impure --json --file tests/azure-image.nix
 nix build --impure --no-link --file tests/update-runtime.nix
 ```

@@ -1,11 +1,12 @@
 # Evaluate with: nix eval --impure --json --file tests/access.nix
 let
   root = toString ../.;
-  names = [ "base" "base-arm" "azure" "desktop" ];
+  names = [ "base" "base-arm" "azure" ];
+  machines = import ./machines.nix;
   results = builtins.listToAttrs (map (name:
     let
       flake = builtins.getFlake ("path:" + root);
-      base = (flake.lib.mkMachine { self = ../machines + "/${name}"; }).nixosConfigurations.machine;
+      base = machines.${name};
       withKey = {
         ryra.tailscale.enable = true;
         sops.secrets.tailscale-auth.sopsFile = builtins.toFile "test-secrets.yaml" "{}";

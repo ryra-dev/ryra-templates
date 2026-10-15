@@ -38,7 +38,7 @@ let
     '';
   };
 in {
-  options.ryra.desktop.enable = lib.mkEnableOption "the Ryra virtual desktop";
+  options.ryra.desktop.enable = lib.mkEnableOption "the Ryra virtual desktop" // { default = true; };
   config = lib.mkIf config.ryra.desktop.enable {
     environment.systemPackages = with pkgs; [
       helper wallpaper firefox gnome-console gnome-control-center

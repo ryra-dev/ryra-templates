@@ -18,6 +18,7 @@ let
   });
 in {
   disabledModules = [ ./hardware.nix ];
+  ryra.desktop.enable = lib.mkDefault false;
   imports = [ (modulesPath + "/virtualisation/qemu-vm.nix") ];
 
   virtualisation = {

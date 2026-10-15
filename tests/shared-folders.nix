@@ -2,8 +2,9 @@
 let
   flake = builtins.getFlake ("path:" + toString ../.);
   inherit (flake.inputs.nixpkgs) lib;
-  presets = [ "base" "base-arm" "azure" "desktop" "lima" "lima-intel" ];
-  machine = preset: (flake.lib.mkMachine { self = ../machines + "/${preset}"; }).nixosConfigurations.machine;
+  machines = import ./machines.nix;
+  presets = builtins.attrNames machines;
+  machine = preset: machines.${preset};
   people = {
     users.users = {
       alice = { isNormalUser = true; group = "alice"; };

@@ -1,5 +1,5 @@
 {
-  title = "NixOS server";
-  summary = "A base configuration for an x86-64 machine";
+  title = "NixOS machine";
+  summary = "A NixOS machine Ryra installs, deploys and can roll back";
   description = builtins.readFile ./README.md;
 }

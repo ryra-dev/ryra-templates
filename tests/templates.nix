@@ -1,13 +1,13 @@
 let
   flake = builtins.getFlake ("path:" + toString ../.);
-  names = [ "base" "base-arm" "azure" "desktop" "lima" "lima-intel" ];
+  machines = import ./machines.nix;
   withoutApps = (flake.lib.mkMachine {
     self = ../machines/base;
     modules = [{ disabledModules = [ (flake.outPath + "/modules/services.nix") ]; }];
   }).nixosConfigurations.machine.config;
   inspect = name:
     let
-      c = (flake.lib.mkMachine { self = ../machines + "/${name}"; }).nixosConfigurations.machine.config;
+      c = machines.${name}.config;
     in
     assert builtins.all (agent: builtins.any (p: (p.pname or p.name) == agent) c.environment.systemPackages) [ "codex" "claude-code" ];
     assert !c.ryra.desktop.enable || (
@@ -49,4 +49,4 @@ let
     };
 in
 assert builtins.all (p: !builtins.elem (p.pname or p.name) [ "codex" "claude-code" ]) withoutApps.environment.systemPackages;
-builtins.listToAttrs (map (name: { inherit name; value = inspect name; }) names)
+builtins.mapAttrs (name: _: inspect name) machines

@@ -5,6 +5,10 @@
   imports = [ (modulesPath + "/profiles/qemu-guest.nix") ./lima-boot.nix ];
 
   services.lima.enable = true;
+  # A local VM is reached from the Mac it runs on, which already has the desktop.
+  ryra.desktop.enable = lib.mkDefault false;
+  # The Lima image is installed from NixOS 25.11.
+  system.stateVersion = lib.mkForce "25.11";
   services.qemuGuest.enable = false;
   # lima-init owns the host user's bootstrap account and SSH key, read from cidata.
   users.mutableUsers = true;

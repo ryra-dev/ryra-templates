@@ -25,11 +25,16 @@
 
   outputs = { self, nixpkgs, disko, sops-nix, ... }@sharedInputs:
     let
-      names = [ "base" "base-arm" "azure" "desktop" "lima" "lima-intel" "qemu" ];
       mkMachine = { self, inputs ? {}, machineDir ? self, hostName ? "machine", modules ? [], specialArgs ? {} }:
         let
           sources = sharedInputs // inputs;
           registries = import (machineDir + "/registries.nix") sources;
+          # What the machine is, as Ryra measured it: its architecture, and the platform it runs on
+          # when that needs its own module. A machine without the file states both itself.
+          hardwareFile = machineDir + "/modules/ryra/hardware.json";
+          hardware = if builtins.pathExists hardwareFile then builtins.fromJSON (builtins.readFile hardwareFile) else {};
+          platform = { nixpkgs.hostPlatform = nixpkgs.lib.mkIf (hardware ? system) hardware.system; }
+            // nixpkgs.lib.optionalAttrs (hardware ? platform) { imports = [ sharedInputs.self.nixosModules.${hardware.platform} ]; };
           bootstrapPorts = machineDir + "/modules/ryra/https-bootstrap-ports.nix";
           make = phase: extraModules: nixpkgs.lib.nixosSystem {
             specialArgs = specialArgs // {
@@ -41,6 +46,7 @@
             };
             modules = [
               sharedInputs.self.nixosModules.default
+              platform
               (machineDir + "/configuration.nix")
               ({ config, ... }: {
                 _module.args.herdrPkgs = sources.herdr-pkgs.legacyPackages.${config.nixpkgs.hostPlatform.system};
@@ -127,24 +133,17 @@
           ];
         };
       };
-      index = builtins.listToAttrs (map (name: {
-        inherit name;
-        value = (import ./machines/${name}/catalog.nix) // { directory = "machines/${name}"; };
-      }) names);
-      templates = (builtins.mapAttrs (name: meta: {
-        path = ./machines/${name};
-        description = meta.summary;
-        welcomeText = meta.description;
-      }) self.index) // {
-        default = self.templates.base;
-        azure-image = {
-          path = ./machines/azure-image;
-          description = "Clean Azure Gen 2 NixOS image for pre-provisioned computers";
-          welcomeText = builtins.readFile ./machines/azure-image/README.md;
+      index.base = (import ./machines/base/catalog.nix) // { directory = "machines/base"; };
+      templates = {
+        base = {
+          path = ./machines/base;
+          description = self.index.base.summary;
+          welcomeText = self.index.base.description;
         };
+        default = self.templates.base;
       };
       checks.x86_64-linux.computer-control = import ./tests/computer-control.nix {
-        desktop = (mkMachine { self = ./machines/desktop; }).nixosConfigurations.machine;
+        desktop = (mkMachine { self = ./machines/base; }).nixosConfigurations.machine;
       };
       checks.x86_64-linux.deployment-health = import ./tests/deployment.nix {
         pkgs = nixpkgs.legacyPackages.x86_64-linux;

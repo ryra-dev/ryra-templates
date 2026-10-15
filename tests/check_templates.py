@@ -30,7 +30,7 @@ for name, config in configs.items():
     assert config['buildJobs'] == 1 and config['buildCores'] == 2, name
     assert all(p in config['packages'] for p in ('vim', 'ripgrep')), name
     assert config['timeZone'] == 'UTC' and config['locale'] == 'en_US.UTF-8', name
-    assert (ROOT / 'machines' / name / 'modules/machine.nix').is_file(), name
+    assert (ROOT / 'machines/base/modules/machine.nix').is_file(), name
     print(f'{name}: architecture, boot, desktop, packages and safeguards passed', flush=True)
 
 with tempfile.TemporaryDirectory(prefix='ryra-copied-template-') as directory:
@@ -53,7 +53,7 @@ with tempfile.TemporaryDirectory(prefix='ryra-copied-template-') as directory:
     lock = json.loads((copied / 'flake.lock').read_text())
     root_inputs = lock['nodes'][lock['root']]['inputs']
     assert 'nixpkgs' in root_inputs and 'ryra-template' in root_inputs
-    shared = lock['nodes'][root_inputs['ryra-template']]
-    assert shared['inputs']['nixpkgs'] == ['nixpkgs']
+    shared = lock['nodes'][lock['nodes'][root_inputs['ryra-template']]['inputs']['nixpkgs']]
+    assert lock['nodes'][root_inputs['nixpkgs']]['locked']['narHash'] == shared['locked']['narHash']
     assert not any(path.is_symlink() for path in copied.rglob('*'))
     print('Organization template: named output, generated modules and root pins passed')
