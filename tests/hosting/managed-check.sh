@@ -125,8 +125,13 @@ hash_keys > "$work/restored-hashes"
 cmp "$persist/keys.sha256" "$work/restored-hashes"
 login_apps
 echo 'Managed auth generation, literal-dollar login, eligibility, retained changed password, stable keys/client credentials and local provider restore passed.'
-phase='switch OIDC apps to their own login'
 base=$(readlink -f /run/current-system)
+phase='custom Nextcloud OIDC beside managed Grafana'
+install -m 0600 "$state/clients/nextcloud/secret" /run/ryra-nextcloud-custom-oidc
+"$base/specialisation/customAuth/bin/switch-to-configuration" test > "$work/custom.log" 2>&1 || { cat "$work/custom.log" >&2; exit 1; }
+login_apps
+echo 'Nextcloud external OIDC result and runtime secret work beside managed Grafana.'
+phase='switch OIDC apps to their own login'
 "$base/specialisation/ownAuth/bin/switch-to-configuration" test > "$work/own.log" 2>&1 || { cat "$work/own.log" >&2; exit 1; }
 systemctl is-active --quiet nextcloud-oidc grafana
 nextcloud-occ user_oidc:provider --output=json | jq -e 'all(.[]; .identifier != "Ryra")' > /dev/null

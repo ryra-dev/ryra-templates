@@ -136,6 +136,14 @@ let
           requires = [ "pebble-trust.service" ];
         };
 
+        specialisation.customAuth = lib.mkIf managedAuth { configuration = {
+          # The fixture provider registers the client; the app consumes only an external result.
+          ryra.nextcloud.auth.result = lib.mkForce {
+            inherit (config.ryra.nextcloud.auth.result) issuerUrl clientId;
+            clientSecretFile = "/run/ryra-nextcloud-custom-oidc";
+          };
+        }; };
+
         specialisation.ownAuth = lib.mkIf managedAuth { configuration = {
           ryra.services.auth.modes = {
             nextcloud = lib.mkForce "none";
