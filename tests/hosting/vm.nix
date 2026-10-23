@@ -136,6 +136,16 @@ let
           requires = [ "pebble-trust.service" ];
         };
 
+        specialisation.ownAuth = lib.mkIf managedAuth { configuration = {
+          ryra.services.auth.modes = {
+            nextcloud = lib.mkForce "none";
+            grafana = lib.mkForce "none";
+          };
+          ryra.services.auth.requests = lib.mkForce {
+            inherit (config.ryra.services.auth.requests) linkding;
+          };
+        }; };
+
         specialisation.privateHttps = lib.mkIf (!managedAuth) { configuration = {
           ryra.services.web = {
             nextcloud = { privateHttps = true; externalUrl = "https://apps.example.test:8443"; };

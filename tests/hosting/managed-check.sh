@@ -125,3 +125,28 @@ hash_keys > "$work/restored-hashes"
 cmp "$persist/keys.sha256" "$work/restored-hashes"
 login_apps
 echo 'Managed auth generation, literal-dollar login, eligibility, retained changed password, stable keys/client credentials and local provider restore passed.'
+phase='switch OIDC apps to their own login'
+base=$(readlink -f /run/current-system)
+"$base/specialisation/ownAuth/bin/switch-to-configuration" test > "$work/own.log" 2>&1 || { cat "$work/own.log" >&2; exit 1; }
+systemctl is-active --quiet nextcloud-oidc grafana
+nextcloud-occ user_oidc:provider --output=json | jq -e 'all(.[]; .identifier != "Ryra")' > /dev/null
+phase='Nextcloud own login page and authenticated DAV'
+curl -fsS https://apps.example.test:8443/login > "$work/nextcloud-own"
+curl -fsS -u 'admin:only-for-this-disposable-guest' -X PROPFIND -H 'Depth: 0' \
+  https://apps.example.test:8443/remote.php/dav/files/admin/ > /dev/null
+phase='Grafana own password login'
+jq -n --rawfile password /run/secrets/grafana-adminpass \
+  '{user:"admin",password:($password|rtrimstr("\n"))}' > "$work/grafana-own.json"
+curl -fsS -c "$work/grafana-cookies" -H 'Content-Type: application/json' \
+  --data-binary "@$work/grafana-own.json" https://apps.example.test:8444/login | jq -e '.message == "Logged in"' > /dev/null
+curl -fsS -b "$work/grafana-cookies" https://apps.example.test:8444/api/user | jq -e '.login == "admin" and .isGrafanaAdmin' > /dev/null
+phase='Grafana disabled OAuth route'
+redirect=$(curl -sS -o /dev/null -w '%{redirect_url}' https://apps.example.test:8444/login/generic_oauth)
+[[ "$redirect" == https://apps.example.test:8444/login* ]]
+phase='repeat own-login reconciliation'
+systemctl restart nextcloud-oidc
+nextcloud-occ user_oidc:provider --output=json | jq -e 'all(.[]; .identifier != "Ryra")' > /dev/null
+phase='switch back to OIDC and sign in again'
+"$base/bin/switch-to-configuration" test > "$work/oidc.log" 2>&1 || { cat "$work/oidc.log" >&2; exit 1; }
+login_apps
+echo 'Nextcloud and Grafana OIDC to own login, repeated cleanup, native authenticated access and OIDC re-enable passed.'
