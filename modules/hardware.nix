@@ -71,6 +71,7 @@ let bios = pkgs.stdenv.hostPlatform.isx86_64; in
   boot.initrd.availableKernelModules = [
     "virtio_pci"
     "virtio_scsi"
+    "virtio_blk"
     "virtio_net"
     "ahci"
     "sd_mod"
