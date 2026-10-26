@@ -5,5 +5,8 @@
   "dependencies": {
     "@agentclientprotocol/claude-agent-acp": "0.90.0",
     "@agentclientprotocol/codex-acp": "2.2.2"
+  },
+  "overrides": {
+    "@openai/codex": "0.162.1"
   }
 }
