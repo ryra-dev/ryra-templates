@@ -122,6 +122,7 @@
           imports = [ disko.nixosModules.disko sops-nix.nixosModules.sops ./modules/default.nix ];
         };
         azure = import ./modules/azure.nix;
+        confidential = import ./modules/confidential.nix;
         azure-image = import ./modules/azure-image;
         cloud-init = import ./modules/cloud-init.nix;
         qemu = import ./modules/qemu.nix;
