@@ -1,0 +1,52 @@
+# Checks for linkding, run against a machine that is already serving.
+#
+# Reads only. See services/nextcloud/test.toml for why that is a property of
+# the schema rather than a habit.
+
+[[tests]]
+name = "linkding"
+
+[[tests.checks]]
+action = "wait"
+unit = "linkding.service"
+timeout = 90
+
+[[tests.checks]]
+action = "wait"
+unit = "nginx.service"
+timeout = 60
+
+[[tests.checks]]
+action = "http"
+name = "redirects an anonymous visitor to login"
+url = "$SERVICE_URL/"
+status = 302
+poll = { interval = 3, attempts = 10 }
+
+# The backend must remain reachable only through nginx.
+[[tests.checks]]
+action = "shell"
+name = "listens on loopback only"
+run = "ss -tlnp 2>/dev/null | grep -q '127.0.0.1:9090' && ! ss -tlnp 2>/dev/null | grep -qE '(0\\.0\\.0\\.0|\\*):9090'"
+
+# The service owns the path; whether it sits under the base Btrfs state
+# subvolume or on an optional ZFS dataset is a host-provider check, not an
+# application check.
+[[tests.checks]]
+action = "shell"
+name = "state directory has the service ownership"
+run = "sudo test -d /var/lib/linkding && test \"$(sudo stat -c %U:%G /var/lib/linkding)\" = linkding:linkding"
+
+# The admin credentials arrived as an env file, not as a password. A secret
+# whose content is a bare string produces a service that starts and has no
+# account anyone can log in to.
+[[tests.checks]]
+action = "shell"
+name = "admin credentials are an env file"
+run = "sudo grep -q '^LD_SUPERUSER_NAME=' /run/secrets/linkding-admin"
+
+[[tests.checks]]
+action = "shell"
+name = "restic repository holds a snapshot"
+run = "sudo ryra-backup-linkding exec snapshots | grep -F /var/lib/linkding >/dev/null"
+timeout = 60

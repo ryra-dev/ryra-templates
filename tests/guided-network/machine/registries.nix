@@ -1,1 +1,1 @@
-inputs: { ryra = inputs.ryra-services; }
+inputs: { ryra = inputs.ryra-template; }

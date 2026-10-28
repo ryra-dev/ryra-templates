@@ -1,1 +1,1 @@
-{ ryra-services, ... }: { ryra = ryra-services; }
+{ ryra-template, ... }: { ryra = ryra-template; }

@@ -1,12 +1,12 @@
 { serviceSource ? null, machineDir ? ./hosting/machine }:
 let
   templates = builtins.getFlake ("path:" + toString ../.);
-  services = if serviceSource == null then templates.inputs.ryra-services
+  services = if serviceSource == null then templates
     else builtins.getFlake serviceSource;
   lib = templates.inputs.nixpkgs.lib;
   machine = web: templates.lib.mkMachine {
     self = machineDir;
-    inputs.ryra-services = services;
+    inputs.ryra-template = services;
     modules = [
       ({ ... }: {
         system.stateVersion = lib.mkForce "26.05";
@@ -28,7 +28,7 @@ let
   failures = map (a: a.message) (builtins.filter (a: !a.assertion) c.assertions);
   managed = (templates.lib.mkMachine {
     self = ./hosting/managed;
-    inputs.ryra-services = services;
+    inputs.ryra-template = services;
     modules = [{
       system.stateVersion = lib.mkForce "26.05";
       sops.defaultSopsFile = lib.mkForce (builtins.toFile "hosting-managed-secrets.yaml" "{}");

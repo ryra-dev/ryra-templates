@@ -10,6 +10,9 @@ let
     assert c.sops.secrets.token.sopsFile == project + "/hosts/common/secrets/vault.yaml";
     assert c.services.ryra-update.reviewedSource == project;
     assert organization.ryraCatalog.${name} ? ryra;
+    assert organization.ryraCatalog.${name}.ryra.flake == "path:${flake.outPath}";
+    assert organization.ryraCatalog.${name}.ryra.index.services.nextcloud.deployable;
+    assert organization.ryraCatalog.${name}.ryra.index.machines.base.directory == "machines/base";
     { host = c.networking.hostName; shared = c.environment.etc."shared-content".text; };
 in
 assert builtins.attrNames organization.nixosConfigurations == [ "one" "two" ];

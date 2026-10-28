@@ -1,10 +1,10 @@
 let
   templates = builtins.getFlake ("path:" + toString ../.);
-  services = templates.inputs.ryra-services;
+  services = templates;
   lib = templates.inputs.nixpkgs.lib;
   machine = custom: templates.lib.mkMachine {
     self = ./guided-network/machine;
-    inputs.ryra-services = services;
+    inputs.ryra-template = services;
     modules = [ ({ lib, ... }: {
       sops.defaultSopsFile = builtins.toFile "guided-network-secrets.yaml" "{}";
       sops.validateSopsFiles = false;

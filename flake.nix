@@ -1,9 +1,8 @@
 {
-  description = "Ryra organization flakes and machine modules";
+  description = "Ryra machines, services and organization configuration";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-    ryra-services.url = "github:ryra-dev/ryra-services";
     herdr-pkgs.url = "github:NixOS/nixpkgs/ca1659429c950a11a565b5764e37a1b704e17ec8";
     cua = {
       url = "github:trycua/cua/e88e9d899ac5effaeae38619527ebaa46b26ce72";
@@ -25,9 +24,15 @@
 
   outputs = { self, nixpkgs, disko, sops-nix, ... }@sharedInputs:
     let
+      directories = path:
+        let entries = if builtins.pathExists path then builtins.readDir path else {};
+        in builtins.filter (name: entries.${name} == "directory") (builtins.attrNames entries);
+      serviceIndex = services: builtins.mapAttrs (name: svc: svc.meta
+        // { deployable = svc ? module; }
+        // (if svc ? package then { package = name; } else {})) services;
       mkMachine = { self, inputs ? {}, machineDir ? self, hostName ? "machine", modules ? [], specialArgs ? {} }:
         let
-          sources = sharedInputs // inputs;
+          sources = sharedInputs // { ryra-template = sharedInputs.self; } // inputs;
           registries = import (machineDir + "/registries.nix") sources;
           # What the machine is, as Ryra measured it: its architecture, and the platform it runs on
           # when that needs its own module. A machine without the file states both itself.
@@ -42,7 +47,7 @@
               ryraServicePhase = phase;
               ryraModules = sharedInputs.self.nixosModules;
               serviceRegistries = registries;
-              serviceModule = sources.ryra-services.nixosModules.services;
+              serviceModule = sharedInputs.self.nixosModules.services;
             };
             modules = [
               sharedInputs.self.nixosModules.default
@@ -116,8 +121,29 @@
           ryraCatalog = builtins.mapAttrs (_: machine: machine.ryraCatalog) machines;
         };
     in {
-      lib = { inherit mkMachine mkOrganization; };
+      lib = {
+        inherit mkMachine mkOrganization;
+        mkAdapter = { pkgs, name, src }: import ./adapters/package.nix { inherit pkgs src; service = name; };
+        checkAuth = import ./checks/auth.nix;
+        authLiveTest = import ./checks/auth-live.nix;
+        withServices = { pkgs, package, services ? self.ryraServices, index ? self.index // { services = serviceIndex services; } }:
+          let adapters = map (svc: svc.package pkgs)
+            (builtins.filter (svc: svc ? package) (builtins.attrValues services));
+          in pkgs.symlinkJoin {
+            name = "ryra-with-catalog";
+            paths = [ package ] ++ adapters;
+            nativeBuildInputs = [ pkgs.makeWrapper ];
+            postBuild = ''
+              wrapProgram "$out/bin/ryra" \
+                --set RYRA_CATALOG_INDEX ${pkgs.writeText "catalog.json" (builtins.toJSON index)} \
+                --prefix PATH : ${pkgs.lib.makeBinPath adapters}
+            '';
+          };
+      };
       nixosModules = {
+        services = import ./lib/services-module.nix;
+        auth-authelia-lldap = import ./lib/auth-provider.nix;
+        backup-restic = import ./lib/backup-providers/restic.nix;
         default = {
           imports = [ disko.nixosModules.disko sops-nix.nixosModules.sops ./modules/default.nix ];
         };
@@ -134,15 +160,28 @@
           ];
         };
       };
-      index.base = (import ./machines/base/catalog.nix) // { directory = "machines/base"; };
-      templates = {
-        base = {
-          path = ./machines/base;
-          description = self.index.base.summary;
-          welcomeText = self.index.base.description;
-        };
-        default = self.templates.base;
+      ryraServices = builtins.listToAttrs (map (name: {
+        inherit name; value = import (./services + "/${name}");
+      }) (directories ./services));
+      index = {
+        services = serviceIndex self.ryraServices;
+        machines = builtins.listToAttrs (map (name: {
+          inherit name;
+          value = (import (./machines + "/${name}/catalog.nix")) // { directory = "machines/${name}"; };
+        }) (directories ./machines));
       };
+      templates = builtins.mapAttrs (name: meta: {
+        path = ./machines + "/${name}";
+        description = meta.summary;
+        welcomeText = meta.description;
+      }) self.index.machines // nixpkgs.lib.optionalAttrs (self.index.machines ? base) { default = self.templates.base; };
+      packages = nixpkgs.lib.genAttrs [ "aarch64-darwin" "aarch64-linux" "x86_64-linux" ] (system:
+        builtins.mapAttrs (_: svc: svc.package nixpkgs.legacyPackages.${system})
+          (nixpkgs.lib.filterAttrs (_: svc: svc ? package) self.ryraServices));
+      validate = builtins.concatLists (builtins.attrValues (builtins.mapAttrs (name: svc:
+        let missing = field: if (svc.meta or {}) ? ${field} then [] else [ "${name}: missing meta.${field}." ];
+        in missing "summary" ++ (if svc ? module then missing "optionRoot" else [])
+      ) self.ryraServices));
       checks.x86_64-linux.computer-control = import ./tests/computer-control.nix {
         desktop = (mkMachine { self = ./machines/base; }).nixosConfigurations.machine;
       };

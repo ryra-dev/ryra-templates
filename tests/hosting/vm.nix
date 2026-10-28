@@ -1,13 +1,13 @@
 { serviceSource ? null, secretsDirectory, managedAuth ? false, cronOrdering ? false }:
 let
   templates = builtins.getFlake ("path:" + toString ../..);
-  services = if serviceSource == null then templates.inputs.ryra-services else builtins.getFlake serviceSource;
+  services = if serviceSource == null then templates else builtins.getFlake serviceSource;
   nixpkgs = templates.inputs.nixpkgs;
   certs = import (nixpkgs + "/nixos/tests/common/acme/server/snakeoil-certs.nix");
   machine = templates.lib.mkMachine {
     self = if managedAuth then ./managed else ./machine;
     hostName = "ryra-hosting-check";
-    inputs.ryra-services = services;
+    inputs.ryra-template = services;
     modules = [
       ({ lib, ... }: {
         systemd.services = lib.genAttrs [ "grafana" "authelia-main" "linkding" "linkding-setup" "linkding-background-tasks" "nextcloud-oidc" "phpfpm-nextcloud" ] (_: lib.mkIf managedAuth {

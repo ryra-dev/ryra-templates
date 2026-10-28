@@ -1,7 +1,7 @@
 { serviceSource ? null, httpCheck ? false, certificateCheck ? false }:
 let
   templates = builtins.getFlake ("path:" + toString ../.);
-  services = if serviceSource == null then templates.inputs.ryra-services
+  services = if serviceSource == null then templates
     else builtins.getFlake serviceSource;
   lib = templates.inputs.nixpkgs.lib;
   makeSystem = selectedServices: templates.inputs.nixpkgs.lib.nixosSystem {

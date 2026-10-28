@@ -128,7 +128,7 @@ web access. These choices are part of the exported organization configuration.
 HTTPS configuration without building a VM. On a Linux x86-64 host with Nix and
 KVM, `bash tests/hosting/run.sh` tests real sign-in, backup restore, HTTPS issuance
 and renewal against a disposable ACME server, and cold boot. An optional flake
-reference selects a local service checkout, for example `path:/work/ryra-services`.
+reference selects a local service checkout, for example `path:/work/ryra-templates`.
 The test generates its own credentials and removes its VM and disk on exit.
 
 ## Network policy checks

@@ -1,6 +1,6 @@
 # Service credentials and machine delivery
 
-Required credentials belong to service metadata in ryra-services, not a second
+Required credentials belong to service metadata in ryra-templates, not a second
 list in a machine template. Ryra's service setup reads that metadata and prompts
 for labelled values or generates internal passwords. The organization declaration
 records vault, group access and machine-scoped delivery references, not plaintext.
