@@ -49,7 +49,8 @@ in {
         mesonFlags = old.mesonFlags ++ [ "-Dvnc=true" ];
         # GNOME's VNC listener is otherwise public TCP. The patch also fixes
         # cleanup of absent GPU resources closing descriptor 0 on headless hosts.
-        patches = (old.patches or []) ++ [ ./desktop/gnome-remote-desktop.patch ];
+        patches = (old.patches or []) ++ [ ./desktop/gnome-remote-desktop.patch ]
+          ++ lib.optional config.ryra.desktop.computerControl.enable ./desktop/gnome-remote-desktop-mirror.patch;
       });
     })];
     services.desktopManager.gnome = {
@@ -82,7 +83,8 @@ in {
       overrideStrategy = "asDropin";
       # Inherit the login PATH. NixOS's generated service PATH hides desktop apps.
       path = lib.mkForce [];
-      serviceConfig.ExecStart = [ "" "${pkgs.gnome-shell}/bin/gnome-shell --headless --wayland-display=wayland-ryra --mode=%i" ];
+      serviceConfig.ExecStart = [ "" ("${pkgs.gnome-shell}/bin/gnome-shell --headless --wayland-display=wayland-ryra --mode=%i"
+        + lib.optionalString config.ryra.desktop.computerControl.enable " --virtual-monitor 1920x1080") ];
     };
     security.pam.services.ryra-desktop.startSession = true;
     security.polkit.extraConfig = ''

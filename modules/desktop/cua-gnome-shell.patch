@@ -1,0 +1,29 @@
+diff --git a/crates/platform-linux/src/wayland/shell_helper.rs b/crates/platform-linux/src/wayland/shell_helper.rs
+--- a/crates/platform-linux/src/wayland/shell_helper.rs
++++ b/crates/platform-linux/src/wayland/shell_helper.rs
+@@ -194,17 +194,19 @@ fn current_uid() -> u32 {
+ fn is_trusted_gnome_shell(pid: u32) -> bool {
+     let comm = std::fs::read_to_string(format!("/proc/{pid}/comm")).ok();
+-    if comm.as_deref().map(str::trim) != Some("gnome-shell") {
+-        return false;
+-    }
+     let executable = std::fs::read_link(format!("/proc/{pid}/exe")).ok();
+     let metadata = executable
+         .as_ref()
+         .and_then(|path| std::fs::metadata(path).ok());
+-    executable
++    let name = executable
+         .as_ref()
+         .and_then(|path| path.file_name())
+-        .and_then(|name| name.to_str())
+-        == Some("gnome-shell")
++        .and_then(|name| name.to_str());
++    // Nix wraps GNOME Shell; /proc comm truncates names to 15 bytes.
++    matches!(
++        (comm.as_deref().map(str::trim), name),
++        (Some("gnome-shell"), Some("gnome-shell"))
++            | (Some(".gnome-shell-wr"), Some(".gnome-shell-wrapped"))
++    )
+         && metadata
+             .as_ref()
+             .is_some_and(|meta| meta.uid() == 0 && meta.permissions().mode() & 0o022 == 0)

@@ -7,7 +7,7 @@ let
   '';
   driver = pkgs.writeShellApplication {
     name = "cua-driver";
-    runtimeInputs = with pkgs; [ coreutils systemd imagemagick ];
+    runtimeInputs = with pkgs; [ coreutils systemd imagemagick glib ];
     text = ''
       export RYRA_CUA_DRIVER=${lib.getExe cfg.package}
       ${builtins.readFile ./desktop/computer-control.sh}
@@ -18,7 +18,9 @@ in {
     enable = lib.mkEnableOption "local agent control of the Ryra virtual desktop";
     package = lib.mkOption {
       type = lib.types.package;
-      default = cuaDriver;
+      default = cuaDriver.overrideAttrs (old: {
+        patches = (old.patches or []) ++ [ ./desktop/cua-gnome-shell.patch ];
+      });
       description = "Cua Driver package wrapped to use the current user's Ryra desktop.";
     };
   };
