@@ -35,6 +35,9 @@ it is made by hand, and has access once it exists. This option does not create
 accounts or grant SSH, sudo, access to an agent session, or credentials. Ryra
 writes this option from `[[shared_folders]]` in `organization.toml`; manage
 those with `ryra machine folders` or a machine's Shared folders settings.
+Nothing here needs Ryra to run: the spaces are ordinary groups, ACLs and a
+systemd unit. Without Ryra, change a space by editing this option where it is
+set, `modules/logins.nix` on a machine Ryra configured, and rebuilding.
 
 The attribute name is a stable storage identifier: `company` means
 `/srv/shared/company` and Unix group `ryra-shared-company`. Use up to 20 lowercase
