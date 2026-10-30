@@ -18,9 +18,9 @@
 # on the system failing in a way that names nothing you did. Whoever is fixing a box at two in
 # the morning, person or agent, reaches for exactly that command.
 #
-# `flake.lock` comes with it, which is what makes a rebuild here reproducible and possible with
-# no network: every input is already in this machine's store, because that is what built the
-# system running now.
+# `flake.lock` comes with it, which is what makes a rebuild here reproducible, and nothing in it
+# needs Ryra: this template's own source and nixpkgs stay in the store with the system, and an
+# input a garbage collection removed comes from its own project, as on any NixOS machine.
 #
 # WHAT HAPPENS ON THE NEXT `ryra org machines apply`: the machine is built from the TREE, this
 # runs again, and whatever was done here is replaced. That is not a flaw to design around, it is

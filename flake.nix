@@ -57,6 +57,10 @@
                 _module.args.herdrPkgs = sources.herdr-pkgs.legacyPackages.${config.nixpkgs.hostPlatform.system};
                 _module.args.cuaDriver = sources.cua.packages.${config.nixpkgs.hostPlatform.system}.cua-driver;
                 _module.args.cuaGnomeExtension = sources.cua + "/libs/cua-driver/wayland-helper/winrects@cua";
+                # In the closure, so garbage collection keeps the locked revision and a rebuild
+                # from /etc/nixos finds it in the store rather than on GitHub. nixpkgs keeps its
+                # own source the same way, through the flake registry.
+                system.extraDependencies = [ sharedInputs.self.outPath ];
               })
             ] ++ modules ++ extraModules ++ builtins.filter
               (path: path != machineDir + "/modules/ryra/settings.nix"
