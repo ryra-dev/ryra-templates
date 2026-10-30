@@ -20,6 +20,10 @@ The desktop starts on demand through `ryra desktop`, with automatic sign-in
 through the machine's authenticated connection. Closing the viewer leaves the
 session running. GNOME Shell runs on Wayland with a private VNC socket.
 Set `ryra.desktop.enable = false` for a terminal-only machine.
+Agents on the machine can see and drive the desktop through Cua Driver, which
+needs a monitor while nobody is watching, so the desktop is a fixed 1920x1080
+that viewers see scaled. `ryra.desktop.computerControl.enable = false` leaves
+both out.
 
 The root flake calls `ryra-template.lib.mkOrganization { inherit self inputs; }`.
 It reads `organization.toml` and builds a named output for every machine with a

@@ -15,7 +15,10 @@ let
   };
 in {
   options.ryra.desktop.computerControl = {
-    enable = lib.mkEnableOption "local agent control of the Ryra virtual desktop";
+    enable = lib.mkEnableOption "local agent control of the Ryra virtual desktop" // {
+      default = config.ryra.desktop.enable;
+      defaultText = lib.literalExpression "config.ryra.desktop.enable";
+    };
     package = lib.mkOption {
       type = lib.types.package;
       default = cuaDriver.overrideAttrs (old: {
@@ -42,6 +45,6 @@ in {
       GTK_A11Y = "atspi";
     };
     # No Cua daemon, listener, or automatic desktop startup. Ryra starts the
-    # local stdio process only after the account opts in to computer control.
+    # local stdio process beside each agent it launches.
   };
 }
