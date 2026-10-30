@@ -23,10 +23,56 @@ let
   mounts = map quote (lib.optional (underSrv != [ ]) "/srv/shared" ++ paths ++ homes);
   system = [ "bin" "boot" "dev" "etc" "home" "lib" "lib64" "nix" "proc" "root" "run" "sbin" "sys" "tmp" "usr" "var" ];
   inside = outer: inner: outer == inner || lib.hasPrefix "${outer}/" inner;
-  # ACL entries by user, for the members the configuration declares. An account made by hand
-  # is left to the group: tmpfiles refuses a whole ACL that names a user it cannot find.
-  named = name: map (member: "u:${member}:rwx")
-    (builtins.filter (member: builtins.hasAttr member config.users.users) (lib.unique folders.${name}.members));
+  # A process keeps the groups it started with, and a lingering login, its herdr session and every
+  # pane in it run for weeks, so a member is named in the ACL of the space and of everything in it
+  # as well as grouped: joining never needs anybody's session restarted. Done when membership
+  # changes rather than on every activation, from what was granted before, kept by uid so an
+  # account deleted since can still be taken out. The walk is tmpfiles' A+, which does not follow
+  # a link a member could swap in, rather than a recursive setfacl as root, which does.
+  access = pkgs.writeShellScript "ryra-shared-folders-access" ''
+    set -u
+    PATH=${lib.makeBinPath [ pkgs.coreutils pkgs.acl config.systemd.package ]}
+    state=/var/lib/ryra-shared-folders/named
+    mkdir -p "$state"
+    rules=$(mktemp)
+    trap 'rm -f "$rules"' EXIT
+    current=""
+    grant() {
+      path=$1; shift
+      file="$state/$(printf %s "$path" | tr / :)"
+      current="$current $file"
+      [ -d "$path" ] || return 0
+      had=$(cat "$file" 2>/dev/null || true)
+      want=""; spec=""
+      for member in "$@"; do
+        uid=$(id -u -- "$member" 2>/dev/null) || continue
+        want="$want $uid"
+        case " $had " in *" $uid "*) ;; *) spec="$spec,u:$member:rwX,d:u:$member:rwx" ;; esac
+      done
+      if [ -n "$spec" ]; then printf 'A+ %s - - - - %s\n' "$path" "''${spec#,}" >> "$rules"; fi
+      for uid in $had; do
+        case " $want " in *" $uid "*) ;; *) take "$path" "$uid" ;; esac
+      done
+      echo $want > "$file.next"
+    }
+    # Only the space itself: whoever cannot pass it reaches nothing inside it.
+    take() {
+      setfacl -x "u:$2" "$1" 2>/dev/null || true
+      setfacl -d -x "u:$2" "$1" 2>/dev/null || true
+    }
+    ${lib.concatMapStrings (name: "grant ${lib.escapeShellArg (path name)} ${lib.escapeShellArgs folders.${name}.members}\n") names}
+    for file in "$state"/*; do
+      case "$file" in *.next) continue ;; esac
+      [ -f "$file" ] || continue
+      case " $current " in *" $file "*) continue ;; esac
+      for uid in $(cat "$file"); do take "$(basename "$file" | tr : /)" "$uid"; done
+      rm -f "$file"
+    done
+    systemd-tmpfiles --create "$rules" || exit 1
+    for file in $current; do
+      if [ -f "$file.next" ]; then mv "$file.next" "$file"; fi
+    done
+  '';
   # An account's shortcuts as "LABEL=PATH", the ones the activation script leaves alone.
   shortcuts = account: map (name: "${folders.${name}.label}=${path name}")
     (builtins.filter (name: builtins.elem account folders.${name}.members) names);
@@ -103,11 +149,8 @@ in
       "d /srv/shared 0711 root root - -"
     ] ++ lib.concatMap (name: [
       "d ${quote (path name)} 2770 root ${group name} - -"
-      # Own the root directory's ACL; do not recursively change existing files. Members this
-      # configuration declares are named as well as grouped: a process keeps the groups it
-      # started with, so a session older than the group (lingering logins keep theirs for good)
-      # still gets in by its user, and so does every file made in here from now on.
-      "a ${quote (path name)} - - - - ${lib.concatStringsSep "," (named name ++ [ "m::rwx" "d:u::rwx" "d:g::rwx" ] ++ map (entry: "d:${entry}") (named name) ++ [ "d:m::rwx" "d:o::---" ])}"
+      # Added to rather than replaced, so the members the access service names stay named.
+      "a+ ${quote (path name)} - - - - m::rwx,d:u::rwx,d:g::rwx,d:m::rwx,d:o::---"
     ]) names ++ map (name:
       "d ${quote "${(user name).home}/Shared"} 0700 ${quote name} ${quote (user name).group} - -"
     ) withHomes ++ lib.concatMap (name:
@@ -125,6 +168,16 @@ in
     systemd.services.systemd-tmpfiles-resetup.unitConfig.RequiresMountsFor = mounts;
   })
   {
+    # Restarted when membership changes, since the script names it, and after tmpfiles has made
+    # the spaces. It holds no socket, so a deploy does not count restarting it as an interruption.
+    systemd.services.ryra-shared-folders = {
+      description = "Name shared folder members in what is already there";
+      wantedBy = [ "multi-user.target" ];
+      after = [ "systemd-tmpfiles-setup.service" "systemd-tmpfiles-resetup.service" ];
+      unitConfig.RequiresMountsFor = mounts;
+      serviceConfig = { Type = "oneshot"; RemainAfterExit = true; ExecStart = access; };
+    };
+
     # Outside the condition above, so removing the last space still tidies up after it.
     system.activationScripts.ryraSharedFolders = lib.stringAfter [ "users" "groups" ] (''
       # With mutable users, NixOS keeps group members it did not declare as users, so an account

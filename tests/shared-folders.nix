@@ -34,6 +34,7 @@ let
     activationUnit = c.systemd.units."systemd-tmpfiles-resetup.service".text;
     packages = map (p: p.pname or p.name) c.environment.systemPackages;
     activation = c.system.activationScripts.ryraSharedFolders.text;
+    access = c.systemd.services.ryra-shared-folders.unitConfig.RequiresMountsFor;
   };
   throws = extra: !(builtins.tryEval (builtins.deepSeq (rules (configured "base" [ extra ])) true)).success;
 in

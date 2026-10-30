@@ -73,14 +73,19 @@ that account. Former locations are remembered in
 target directory's ACL and group, not the presence of a shortcut.
 
 A process keeps the groups it started with, and a lingering login, its herdr
-session and every pane in it can run for weeks. So members this configuration
-declares are also named in the space's ACL and in the default ACL its new files
-inherit: a session that started before they were added opens the space at once.
-Files made before somebody was added, and every file for an account made by
-hand, are reached through the group, which a running session only gains when it
-starts again; Ryra says so when that is why something is refused. Withdrawing
-access from an already running session requires ending that session; removing
-a member does not erase copies they already have.
+session and every pane in it can run for weeks. So every member with an account
+is also named in the ACL of the space and of everything already in it, with
+default entries on its directories for what is made later: a session that
+started before they were added opens it at once, and joining never restarts
+anybody's session. The ryra-shared-folders service does this when membership
+changes, after tmpfiles and the mounts, remembering by uid what it granted in
+/var/lib/ryra-shared-folders/named; it walks the space with systemd-tmpfiles,
+which does not follow a link a member swaps in. A member who leaves loses the
+entry on the space itself, which is all that lets anybody past it, and an
+account named before it exists is covered the next time membership changes;
+its first login has the group anyway. A running session keeps a group it lost,
+so withdrawing access from one requires ending that session; removing a member
+does not erase copies they already have.
 
 Existing contents are not recursively repaired. Files moved from elsewhere,
 copies that preserve permissions, programs requesting mode `0600`, and later

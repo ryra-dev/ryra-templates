@@ -42,9 +42,9 @@ for preset, cases in results["presets"].items():
     assert len(links) == 3, (preset, links)
     assert not any(rule.startswith(("L+", "D ", "R ", "r ", "Z ")) for rule in rules), rules
     assert any('"/home/bob work/Shared/Company"' in rule for rule in links), links
-    # Named as well as grouped, so a session older than the group still gets in.
-    acl = next(rule for rule in rules if rule.startswith('a "/srv/shared/company" '))
-    assert "u:alice:rwx,u:bob:rwx,m::rwx" in acl and "d:u:alice:rwx,d:u:bob:rwx" in acl, acl
+    # Added to, never replaced, so what the access service names stays; it waits for the mounts.
+    assert any(rule.startswith('a+ "/srv/shared/company" ') for rule in rules), rules
+    assert enabled["access"] == enabled["mountPaths"], (preset, enabled["access"])
     print(f"{preset}: optional spaces, separate groups, personal shortcuts and mount ordering passed")
 
 removed = results["removedMember"]
@@ -60,7 +60,7 @@ assert not located["failures"], located["failures"]
 assert located["groups"]["ryra-shared-company"] == ["alice", "bob", "deploy"], located["groups"]
 rules = located["rules"]
 assert 'd "/data/research" 2770 root ryra-shared-research - -' in rules, rules
-assert any(rule.startswith('a "/data/research" ') for rule in rules), rules
+assert any(rule.startswith('a+ "/data/research" ') for rule in rules), rules
 assert 'd /srv/shared 0711 root root - -' in rules, rules
 assert 'L "/home/alice/Shared/Research notes" - "alice" "alice" - /data/research' in rules, rules
 assert not any("deploy" in rule for rule in rules), "an account without a declared home got a shortcut"
