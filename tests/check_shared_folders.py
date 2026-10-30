@@ -42,6 +42,9 @@ for preset, cases in results["presets"].items():
     assert len(links) == 3, (preset, links)
     assert not any(rule.startswith(("L+", "D ", "R ", "r ", "Z ")) for rule in rules), rules
     assert any('"/home/bob work/Shared/Company"' in rule for rule in links), links
+    # Named as well as grouped, so a session older than the group still gets in.
+    acl = next(rule for rule in rules if rule.startswith('a "/srv/shared/company" '))
+    assert "u:alice:rwx,u:bob:rwx,m::rwx" in acl and "d:u:alice:rwx,d:u:bob:rwx" in acl, acl
     print(f"{preset}: optional spaces, separate groups, personal shortcuts and mount ordering passed")
 
 removed = results["removedMember"]
@@ -49,6 +52,8 @@ assert removed["groups"]["ryra-shared-company"] == ["alice"], removed
 assert not any("bob" in rule for rule in removed["rules"]), removed
 assert 'gpasswd -d "$member" ryra-shared-company' in removed["activation"], removed["activation"]
 assert '" alice "' in removed["activation"], removed["activation"]
+assert 'rmdir -- "$old"' in removed["activation"], removed["activation"]
+assert 'runuser -u "$user" -- rm -f -- "$link"' in removed["activation"], removed["activation"]
 
 located = results["located"]
 assert not located["failures"], located["failures"]

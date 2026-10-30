@@ -23,6 +23,13 @@ let
   mounts = map quote (lib.optional (underSrv != [ ]) "/srv/shared" ++ paths ++ homes);
   system = [ "bin" "boot" "dev" "etc" "home" "lib" "lib64" "nix" "proc" "root" "run" "sbin" "sys" "tmp" "usr" "var" ];
   inside = outer: inner: outer == inner || lib.hasPrefix "${outer}/" inner;
+  # ACL entries by user, for the members the configuration declares. An account made by hand
+  # is left to the group: tmpfiles refuses a whole ACL that names a user it cannot find.
+  named = name: map (member: "u:${member}:rwx")
+    (builtins.filter (member: builtins.hasAttr member config.users.users) (lib.unique folders.${name}.members));
+  # An account's shortcuts as "LABEL=PATH", the ones the activation script leaves alone.
+  shortcuts = account: map (name: "${folders.${name}.label}=${path name}")
+    (builtins.filter (name: builtins.elem account folders.${name}.members) names);
 in
 {
   options.ryra.sharedFolders = lib.mkOption {
@@ -61,7 +68,8 @@ in
     }));
   };
 
-  config = lib.mkIf (folders != {}) {
+  config = lib.mkMerge [
+  (lib.mkIf (folders != {}) {
     assertions = [
       {
         assertion = lib.all (name: builtins.match "[a-z][a-z0-9-]{0,19}" name != null) names;
@@ -89,27 +97,17 @@ in
       members = folders.${lib.removePrefix "ryra-shared-" groupName}.members;
     });
 
-    # With mutable users, NixOS keeps group members it did not declare as users, so an account
-    # made by hand would stay in a space after being removed from it. These groups belong to this
-    # module, so whoever is not listed is taken out. `gpasswd -d`, because `-M` refuses a name
-    # with no account yet, and listing one before it is made is allowed.
-    system.activationScripts.ryraSharedFolders = lib.stringAfter [ "users" "groups" ] (lib.concatMapStrings (name: ''
-      for member in $(${pkgs.getent}/bin/getent group ${group name} | ${pkgs.coreutils}/bin/cut -d: -f4 | ${pkgs.coreutils}/bin/tr , ' '); do
-        case " ${lib.concatStringsSep " " folders.${name}.members} " in
-          *" $member "*) ;;
-          *) ${pkgs.shadow}/bin/gpasswd -d "$member" ${group name} ;;
-        esac
-      done
-    '') names);
-
     environment.systemPackages = [ pkgs.acl ];
     systemd.tmpfiles.rules = lib.optionals (underSrv != [ ]) [
       # Traversable, but listing other teams' space names is unnecessary.
       "d /srv/shared 0711 root root - -"
     ] ++ lib.concatMap (name: [
       "d ${quote (path name)} 2770 root ${group name} - -"
-      # Own the root directory's ACL; do not recursively change existing files.
-      "a ${quote (path name)} - - - - d:u::rwx,d:g::rwx,d:m::rwx,d:o::---"
+      # Own the root directory's ACL; do not recursively change existing files. Members this
+      # configuration declares are named as well as grouped: a process keeps the groups it
+      # started with, so a session older than the group (lingering logins keep theirs for good)
+      # still gets in by its user, and so does every file made in here from now on.
+      "a ${quote (path name)} - - - - ${lib.concatStringsSep "," (named name ++ [ "m::rwx" "d:u::rwx" "d:g::rwx" ] ++ map (entry: "d:${entry}") (named name) ++ [ "d:m::rwx" "d:o::---" ])}"
     ]) names ++ map (name:
       "d ${quote "${(user name).home}/Shared"} 0700 ${quote name} ${quote (user name).group} - -"
     ) withHomes ++ lib.concatMap (name:
@@ -125,5 +123,67 @@ in
     # and nixos-rebuild switch. No new filesystem or disk layout is introduced.
     systemd.services.systemd-tmpfiles-setup.unitConfig.RequiresMountsFor = mounts;
     systemd.services.systemd-tmpfiles-resetup.unitConfig.RequiresMountsFor = mounts;
-  };
+  })
+  {
+    # Outside the condition above, so removing the last space still tidies up after it.
+    system.activationScripts.ryraSharedFolders = lib.stringAfter [ "users" "groups" ] (''
+      # With mutable users, NixOS keeps group members it did not declare as users, so an account
+      # made by hand would stay in a space after being removed from it. These groups belong to
+      # this module, so whoever is not listed is taken out. `gpasswd -d`, because `-M` refuses a
+      # name with no account yet, and listing one before it is made is allowed.
+    '' + lib.concatMapStrings (name: ''
+      for member in $(getent group ${group name} | cut -d: -f4 | tr , ' '); do
+        case " ${lib.concatStringsSep " " folders.${name}.members} " in
+          *" $member "*) ;;
+          *) gpasswd -d "$member" ${group name} ;;
+        esac
+      done
+    '') names + ''
+      # What a rename, move or removal leaves behind. A former location is removed only when it
+      # is empty: one still holding files stays where it is, with its shortcuts.
+      state=/var/lib/ryra-shared-folders/paths
+      current=${lib.escapeShellArg (lib.concatStringsSep " " paths)}
+      if [ -f "$state" ] || [ -n "$current" ]; then
+        known="$current"
+        former=""
+        for old in $(cat "$state" 2>/dev/null); do
+          case " $current " in *" $old "*) continue ;; esac
+          known="$known $old"
+          rmdir -- "$old" 2>/dev/null || true
+          if [ -e "$old" ]; then former="$former $old"; fi
+        done
+        mkdir -p /var/lib/ryra-shared-folders
+        printf '%s\n' $current $former > "$state"
+        if [ -z "$current$former" ]; then rm -f "$state"; fi
+        # A shortcut under an old label, to a space the account was taken out of, or to a former
+        # location that is gone. Removed as the account itself, so a home it controls cannot turn
+        # this into root deleting something else.
+        tidy() {
+          user=$1; dir=$2/Shared; shift 2
+          { [ -d "$dir" ] && [ ! -L "$dir" ]; } || return 0
+          for link in "$dir"/*; do
+            [ -L "$link" ] || continue
+            target=$(readlink -- "$link")
+            case " $current " in
+              *" $target "*)
+                keep=no
+                for wanted in "$@"; do
+                  if [ "$wanted" = "''${link##*/}=$target" ]; then keep=yes; fi
+                done ;;
+              *)
+                case " $known " in
+                  *" $target "*) if [ -e "$target" ]; then keep=yes; else keep=no; fi ;;
+                  *) keep=yes ;;
+                esac ;;
+            esac
+            if [ "$keep" = no ]; then runuser -u "$user" -- rm -f -- "$link"; fi
+          done
+        }
+    '' + lib.concatMapStrings (name: ''
+        tidy ${lib.escapeShellArg name} ${lib.escapeShellArg (user name).home} ${lib.escapeShellArgs (shortcuts name)}
+    '') (builtins.filter homed (builtins.attrNames config.users.users)) + ''
+      fi
+    '');
+  }
+  ];
 }

@@ -63,13 +63,24 @@ symlinks at a shortcut's location are preserved. If a name is already occupied,
 choose another label or move that item yourself. Keep `~/Shared` as a directory;
 the module does not replace it with a link to everybody's spaces.
 
-Changing an identifier or a path creates a new storage location; it does not move data.
-Removing a space, label or member does not delete its documents or old home
-shortcuts. An obsolete shortcut can be removed manually. Access comes from the
-target directory's group, not the presence of a shortcut. Group changes require
-fresh login sessions, including restarting agents. Withdrawing access from an
-already running session requires ending that session; removing a member does
-not erase copies they already have.
+Changing an identifier or a path creates a new storage location; it does not move
+data. Activation tidies up after a change and never deletes a file: a former
+location is removed when it is empty and otherwise stays where it is, with the
+shortcuts that point at it, and a shortcut under an old label, to a space the
+account was taken out of, or to a former location that is gone, is removed by
+that account. Former locations are remembered in
+/var/lib/ryra-shared-folders/paths. Access comes from the
+target directory's ACL and group, not the presence of a shortcut.
+
+A process keeps the groups it started with, and a lingering login, its herdr
+session and every pane in it can run for weeks. So members this configuration
+declares are also named in the space's ACL and in the default ACL its new files
+inherit: a session that started before they were added opens the space at once.
+Files made before somebody was added, and every file for an account made by
+hand, are reached through the group, which a running session only gains when it
+starts again; Ryra says so when that is why something is refused. Withdrawing
+access from an already running session requires ending that session; removing
+a member does not erase copies they already have.
 
 Existing contents are not recursively repaired. Files moved from elsewhere,
 copies that preserve permissions, programs requesting mode `0600`, and later
