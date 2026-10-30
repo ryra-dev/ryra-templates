@@ -1,0 +1,22 @@
+filters: 'type == "book"'
+properties:
+  author:
+    displayName: Author
+  status:
+    displayName: Status
+  rating:
+    displayName: Rating
+views:
+  - type: table
+    name: Books
+    order: [file.name, author, status, rating]
+    sort:
+      - property: rating
+        direction: DESC
+  - type: kanban
+    name: Reading
+    order: [file.name, author]
+    groupBy:
+      property: note.status
+      direction: ASC
+    groupOrder: [To read, Reading, Finished]

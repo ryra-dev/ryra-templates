@@ -1,0 +1,19 @@
+filters: 'type == "company"'
+properties:
+  stage:
+    displayName: Stage
+  contacts:
+    displayName: Contacts
+  website:
+    displayName: Website
+views:
+  - type: kanban
+    name: Pipeline
+    order: [file.name, contacts, website]
+    groupBy:
+      property: note.stage
+      direction: ASC
+    groupOrder: [Lead, Contacted, Trial, Customer, Lost]
+  - type: table
+    name: Companies
+    order: [file.name, stage, contacts, website]

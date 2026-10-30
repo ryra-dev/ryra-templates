@@ -6,6 +6,7 @@ service-repository pins.
 
 - [machines/](machines/): copyable machine configurations, including the base template.
 - [services/](services/): deployable applications, external accounts and adapters.
+- [views/](views/): property views a new `.base` file can start from.
 - [modules/](modules/): shared machine configuration.
 - [lib/](lib/): service composition, authentication, secrets and backups.
 
@@ -13,12 +14,13 @@ An organization keeps its own declaration and machine configuration.
 `lib.mkOrganization` composes those machines using this repository.
 Whole organization starters can live here later; none are published today.
 
-Register a fork once for both services and machines:
+Register a fork once for its services, machines and views:
 
 ```sh
 ryra catalog --org ORG --add-source team=github:TEAM/ryra-templates
 ryra catalog --org ORG
 ryra catalog --org ORG --templates
+ryra catalog --org ORG --views
 ```
 
 Use namespace `ryra` instead of `team` to replace the built-in source.

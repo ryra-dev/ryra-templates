@@ -1,0 +1,19 @@
+filters: 'type == "post"'
+properties:
+  status:
+    displayName: Status
+  channel:
+    displayName: Channel
+  publish:
+    displayName: Publish
+views:
+  - type: calendar
+    name: Calendar
+    startDate: note.publish
+  - type: kanban
+    name: Status
+    order: [file.name, channel, publish]
+    groupBy:
+      property: note.status
+      direction: ASC
+    groupOrder: [Idea, Drafting, Review, Published]
