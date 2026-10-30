@@ -47,7 +47,25 @@ for preset, cases in results["presets"].items():
 removed = results["removedMember"]
 assert removed["groups"]["ryra-shared-company"] == ["alice"], removed
 assert not any("bob" in rule for rule in removed["rules"]), removed
+assert 'gpasswd -d "$member" ryra-shared-company' in removed["activation"], removed["activation"]
+assert '" alice "' in removed["activation"], removed["activation"]
+
+located = results["located"]
+assert not located["failures"], located["failures"]
+assert located["groups"]["ryra-shared-company"] == ["alice", "bob", "deploy"], located["groups"]
+rules = located["rules"]
+assert 'd "/data/research" 2770 root ryra-shared-research - -' in rules, rules
+assert any(rule.startswith('a "/data/research" ') for rule in rules), rules
+assert 'd /srv/shared 0711 root root - -' in rules, rules
+assert 'L "/home/alice/Shared/Research notes" - "alice" "alice" - /data/research' in rules, rules
+assert not any("deploy" in rule for rule in rules), "an account without a declared home got a shortcut"
+assert '"/data/research"' in located["mountPaths"], located["mountPaths"]
+assert '" alice bob deploy "' in located["activation"], located["activation"]
+assert not any("/srv/shared" in rule for rule in results["elsewhere"]), results["elsewhere"]
+print("Custom locations, accounts made by hand and removal of undeclared members passed")
+
 for case, failures in results["rejected"].items():
     assert failures, (case, "invalid shared-space configuration accepted")
-assert results["invalidLabelRejected"], "path traversal in a shortcut label accepted"
-print("Membership removal and invalid membership, names and shortcut collisions passed")
+for case, thrown in results["thrown"].items():
+    assert thrown, (case, "invalid shared-space value accepted")
+print("Invalid membership, names, locations and shortcut collisions passed")
