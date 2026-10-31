@@ -11,7 +11,7 @@ Each folder is one template:
 - `preview.png`: the picture on its card, about 720 pixels wide.
 - `sample/`: the notes the preview is drawn from. A sample may write `{{month}}`
   for the month the preview is taken in, so a calendar shows them, and
-  `{{today}}` for its day.
+  `{{today}}` for its day, or `{{today+3}}` for three days after it.
 
 `view.json` may also give an `order`: Ryra lists those with one first, lowest
 first, and the rest by name.
