@@ -10,10 +10,15 @@ Each folder is one template:
 - `view.json`: its `title` and one-line `summary`.
 - `preview.png`: the picture on its card, about 720 pixels wide.
 - `sample/`: the notes the preview is drawn from. A sample may write `{{month}}`
-  for the month the preview is taken in, so a calendar shows them.
+  for the month the preview is taken in, so a calendar shows them, and
+  `{{today}}` for its day.
+
+`view.json` may also give an `order`: Ryra lists those with one first, lowest
+first, and the rest by name.
 
 Inside an Obsidian vault a view reads the whole vault, so each template filters
-on a `type` property. A note added from the view is given that type.
+on a `type` property, which a note added from the view is given, or, as Todo
+does, on `file.inFolder(this.file.folder)`, the folder the view is in.
 
 `bash scripts/catalog.sh` publishes the folders into `catalog.json`. A preview
 is a screenshot of Ryra drawing `view.base` over `sample/`, cropped to the view.
