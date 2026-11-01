@@ -1,6 +1,7 @@
 filters: file.inFolder(this.file.folder)
 formulas:
   when: 'if(!due, "No date", if(due.date() < today(), "Overdue", "Today"))'
+  day: 'due.date()'
 properties:
   done:
     displayName: Done
@@ -8,6 +9,8 @@ properties:
     displayName: Due
   tags:
     displayName: Tags
+  formula.day:
+    displayName: Day
 views:
   - type: list
     name: Today
@@ -20,9 +23,16 @@ views:
     sort:
       - property: due
         direction: ASC
-  - type: calendar
+  - type: list
     name: Upcoming
-    filters: 'done != true'
+    filters: 'done != true && due.date() > today()'
+    order: [done, file.name, due, tags]
+    groupBy:
+      property: formula.day
+      direction: ASC
+    sort:
+      - property: due
+        direction: ASC
   - type: list
     name: Done
     filters: 'done == true'
