@@ -1,6 +1,6 @@
 filters: file.inFolder(this.file.folder)
 formulas:
-  when: 'if(due.date() < today(), "Overdue", "Today")'
+  when: 'if(!due, "No date", if(due.date() < today(), "Overdue", "Today"))'
   project: 'if(this.file.folder, file.folder.slice(this.file.folder.length + 1), file.folder)'
 properties:
   done:
@@ -14,12 +14,12 @@ properties:
 views:
   - type: list
     name: Today
-    filters: 'done != true && due.date() <= today()'
+    filters: 'done != true && (!due || due.date() <= today())'
     order: [done, file.name, due, formula.project, tags]
     groupBy:
       property: formula.when
       direction: ASC
-    groupOrder: [Overdue, Today]
+    groupOrder: [Overdue, Today, No date]
     sort:
       - property: due
         direction: ASC
@@ -27,13 +27,6 @@ views:
     name: Upcoming
     filters: 'done != true'
     startDate: note.due
-  - type: list
-    name: Inbox
-    filters: 'done != true && !due'
-    order: [done, file.name, tags]
-    groupBy:
-      property: formula.project
-      direction: ASC
   - type: list
     name: Done
     filters: 'done == true'
