@@ -1,4 +1,4 @@
 ---
-due: {{month}}-20
+due: {{today-4}}
 done: true
 ---

@@ -1,24 +1,29 @@
-filters: 'type == "task"'
+filters: file.inFolder(this.file.folder)
 properties:
   status:
     displayName: Status
-  owner:
-    displayName: Owner
+  assignee:
+    displayName: Assignee
   due:
     displayName: Due
+  tags:
+    displayName: Tags
 views:
   - type: kanban
     name: Board
-    order: [file.name, owner, due]
+    filters: 'status != "Done"'
+    order: [file.name, assignee, due, tags]
     groupBy:
       property: note.status
       direction: ASC
     groupOrder: [Todo, In progress, Done]
-  - type: table
-    name: All tasks
-    order: [file.name, status, owner, due]
-    sort:
-      - property: due
-        direction: ASC
   - type: calendar
     name: Due dates
+    filters: 'status != "Done"'
+  - type: table
+    name: Done
+    filters: 'status == "Done"'
+    order: [file.name, assignee, due, tags]
+    sort:
+      - property: due
+        direction: DESC

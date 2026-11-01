@@ -1,5 +1,6 @@
 ---
-type: task
 status: In progress
-owner: "[[Leo]]"
+assignee: ["@leo:acme"]
+due: {{today+4}}
+tags: [event]
 ---

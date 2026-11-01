@@ -1,18 +1,18 @@
-filters: 'type == "post"'
+filters: file.inFolder(this.file.folder)
 properties:
   status:
     displayName: Status
   channel:
     displayName: Channel
-  publish:
+  due:
     displayName: Publish
 views:
   - type: calendar
     name: Calendar
-    startDate: note.publish
+    filters: 'status != "Published"'
   - type: kanban
     name: Status
-    order: [file.name, channel, publish]
+    order: [file.name, channel, due]
     groupBy:
       property: note.status
       direction: ASC

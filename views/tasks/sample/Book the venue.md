@@ -1,5 +1,6 @@
 ---
-type: task
 status: Todo
-owner: "[[Leo]]"
+assignee: ["@leo:acme"]
+due: {{today+2}}
+tags: [event]
 ---

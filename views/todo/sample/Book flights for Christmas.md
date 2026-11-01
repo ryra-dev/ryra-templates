@@ -1,3 +1,4 @@
 ---
 tags: [travel]
+done: false
 ---

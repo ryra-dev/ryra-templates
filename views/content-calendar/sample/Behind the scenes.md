@@ -1,6 +1,5 @@
 ---
-type: post
 status: Idea
 channel: Video
-publish: {{month}}-19
+due: {{today+13}}
 ---

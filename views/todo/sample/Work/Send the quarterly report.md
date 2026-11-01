@@ -1,4 +1,6 @@
 ---
 due: {{today}} 11:00
-tags: [work]
+priority: 2
+tags: [finance]
+done: false
 ---

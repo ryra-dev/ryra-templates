@@ -1,4 +1,4 @@
-filters: 'type == "book"'
+filters: file.inFolder(this.file.folder)
 properties:
   author:
     displayName: Author

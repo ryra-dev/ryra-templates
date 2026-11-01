@@ -1,6 +1,5 @@
 ---
-type: post
 status: Drafting
 channel: LinkedIn
-publish: {{month}}-25
+due: {{today+19}}
 ---

@@ -1,5 +1,6 @@
 ---
-type: task
 status: In progress
-owner: "[[Max]]"
+assignee: ["@max:acme"]
+due: {{today+1}}
+tags: [finance]
 ---

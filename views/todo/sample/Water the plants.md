@@ -1,3 +1,4 @@
 ---
 due: {{today}}
+done: false
 ---

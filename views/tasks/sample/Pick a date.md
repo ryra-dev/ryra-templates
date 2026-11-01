@@ -1,5 +1,6 @@
 ---
-type: task
 status: Done
-owner: "[[Ada]]"
+assignee: ["@ada:acme"]
+due: {{today-3}}
+tags: [event]
 ---

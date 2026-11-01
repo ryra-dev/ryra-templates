@@ -1,5 +1,6 @@
 ---
-type: task
 status: Todo
-owner: "[[Ada]]"
+assignee: ["@ada:acme"]
+due: {{today+9}}
+tags: [marketing]
 ---
