@@ -14,7 +14,7 @@ properties:
 views:
   - type: list
     name: Today
-    filters: 'done == false && (!due || due.date() <= today())'
+    filters: 'done != true && ((due && due.date() <= today()) || (!due && (done == false || priority || remind || assignee)))'
     order: [done, file.name, due, tags]
     groupBy:
       property: formula.when
@@ -25,7 +25,7 @@ views:
         direction: ASC
   - type: list
     name: Upcoming
-    filters: 'done == false && due'
+    filters: 'done != true && due'
     order: [done, file.name, due, tags]
     groupBy:
       property: formula.day
