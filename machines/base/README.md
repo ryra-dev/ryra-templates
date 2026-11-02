@@ -15,5 +15,6 @@ Add local settings in `modules/machine.nix` or another `.nix` file anywhere unde
 consumed separately by the service module. Leave the generated hardware, login and
 secret files to Ryra.
 
-From the organization root, `ryra design . --host <name> --json` evaluates this machine locally,
-including on macOS. Read the `eval` result before deploying.
+From the organization root,
+`nix eval --raw .#nixosConfigurations.<name>.config.system.build.toplevel.drvPath`
+evaluates this machine without deploying it. A store path means it evaluates.
