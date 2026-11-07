@@ -131,6 +131,9 @@ in
         RemainAfterExit = true;
       };
       script = lib.getExe issue;
+      # A switch restarts nginx before it starts this, so nginx would go on presenting the
+      # certificate from before the names changed, and the deploy's health check refuses it.
+      postStart = "${pkgs.systemd}/bin/systemctl kill -s HUP nginx.service || true";
     };
 
     systemd.services.ryra-local-https-renew = {

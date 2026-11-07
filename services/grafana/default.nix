@@ -137,6 +137,9 @@
         ];
         ryra.services.web.${name}.healthPath = "/api/health";
         ryra.services.state.${name} = { path = dataDir; owner = "grafana"; group = "grafana"; };
+        # A new backup password restarts this during the switch that installs Grafana, and it copies
+        # a database Grafana only makes when it first starts.
+        systemd.services."restic-backups-${name}".after = [ "grafana.service" ];
         services.grafana = {
           enable = true;
           inherit dataDir;
