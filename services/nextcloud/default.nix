@@ -18,7 +18,6 @@
       "restic-nextcloud" = {
         purpose = "Encryption password for Nextcloud's backup repository";
         owner = "nextcloud";
-        restart = [ "restic-backups-nextcloud.service" ];
         generate = { format = "base64"; bytes = 32; };
       };
     };

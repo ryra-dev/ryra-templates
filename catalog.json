@@ -54,10 +54,7 @@
             "bytes": 32,
             "format": "base64"
           },
-          "purpose": "Encryption password for the shared sign-in backup repository",
-          "restart": [
-            "restic-backups-authelia.service"
-          ]
+          "purpose": "Encryption password for the shared sign-in backup repository"
         }
       },
       "summary": "Optional shared sign-in and user directory",
@@ -165,10 +162,7 @@
             "bytes": 32,
             "format": "base64"
           },
-          "purpose": "Encryption password for gateway ownership backups",
-          "restart": [
-            "restic-backups-cloudflare.service"
-          ]
+          "purpose": "Encryption password for gateway ownership backups"
         }
       },
       "serviceConnections": {
@@ -243,10 +237,7 @@
             "bytes": 32,
             "format": "base64"
           },
-          "purpose": "Encryption password for Forgejo's backup repository",
-          "restart": [
-            "restic-backups-forgejo.service"
-          ]
+          "purpose": "Encryption password for Forgejo's backup repository"
         }
       },
       "summary": "Git repositories, issues and pull requests",
@@ -659,10 +650,7 @@
             "bytes": 32,
             "format": "base64"
           },
-          "purpose": "Encryption password for Grafana's backup repository",
-          "restart": [
-            "restic-backups-grafana.service"
-          ]
+          "purpose": "Encryption password for Grafana's backup repository"
         }
       },
       "summary": "Dashboards and observability",
@@ -718,10 +706,7 @@
             "format": "base64"
           },
           "owner": "root",
-          "purpose": "Encryption password for Linkding's backup repository",
-          "restart": [
-            "restic-backups-linkding.service"
-          ]
+          "purpose": "Encryption password for Linkding's backup repository"
         }
       },
       "summary": "Bookmark manager",
@@ -971,10 +956,7 @@
             "format": "base64"
           },
           "owner": "nextcloud",
-          "purpose": "Encryption password for Nextcloud's backup repository",
-          "restart": [
-            "restic-backups-nextcloud.service"
-          ]
+          "purpose": "Encryption password for Nextcloud's backup repository"
         }
       },
       "summary": "Files, calendar and contacts",
@@ -1102,10 +1084,7 @@
             "format": "hex"
           },
           "owner": "root",
-          "purpose": "Vexa backup encryption password",
-          "restart": [
-            "restic-backups-vexa.service"
-          ]
+          "purpose": "Vexa backup encryption password"
         },
         "vexa-environment": {
           "purpose": "Vexa database, internal API, session and recording-storage credentials",

@@ -24,7 +24,6 @@
       };
       "restic-authelia" = {
         purpose = "Encryption password for the shared sign-in backup repository";
-        restart = [ "restic-backups-authelia.service" ];
         generate = { format = "base64"; bytes = 32; };
       };
     };

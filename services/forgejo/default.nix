@@ -19,7 +19,6 @@
       };
       "restic-forgejo" = {
         purpose = "Encryption password for Forgejo's backup repository";
-        restart = [ "restic-backups-forgejo.service" ];
         generate = { format = "base64"; bytes = 32; };
       };
     };

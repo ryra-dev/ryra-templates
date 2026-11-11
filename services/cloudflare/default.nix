@@ -10,7 +10,6 @@
     needs = [ "secrets" "backup" ];
     secrets.restic-cloudflare = {
       purpose = "Encryption password for gateway ownership backups";
-      restart = [ "restic-backups-cloudflare.service" ];
       generate = { format = "base64"; bytes = 32; };
     };
     provides = [ "web-gateway" ];

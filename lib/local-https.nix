@@ -60,12 +60,12 @@ let
         -out ${dir}/leaf.csr
       openssl x509 -req -in ${dir}/leaf.csr -CA ${dir}/ca.pem -CAkey ${dir}/ca.key \
         -set_serial "0x$(openssl rand -hex 16)" -days 90 -extfile ${leafExt} -out ${dir}/leaf.pem.new
+      chown root:${nginxGroup} ${dir}/key.pem.new
+      chmod 0640 ${dir}/key.pem.new
+      chmod 0644 ${dir}/leaf.pem.new
       mv ${dir}/key.pem.new ${dir}/key.pem
       mv ${dir}/leaf.pem.new ${dir}/leaf.pem
       rm -f ${dir}/leaf.csr
-      chmod 0644 ${dir}/leaf.pem
-      chown root:${nginxGroup} ${dir}/key.pem
-      chmod 0640 ${dir}/key.pem
     '';
   };
   # The machine's own CA and the system bundle are made in activation, not a unit: activation runs

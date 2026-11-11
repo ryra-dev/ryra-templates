@@ -25,7 +25,6 @@
       "restic-linkding" = {
         purpose = "Encryption password for Linkding's backup repository";
         owner = "root";
-        restart = [ "restic-backups-linkding.service" ];
         generate = { format = "base64"; bytes = 32; };
       };
     };

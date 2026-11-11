@@ -129,7 +129,6 @@ in
           owner = request.user;
           group = "root";
           mode = "0400";
-          restartUnits = [ "${unitName name}.service" ];
         }
       ) requests;
     })
@@ -156,7 +155,6 @@ in
           timerConfig = {
             OnCalendar = config.ryra.services.backup.onCalendar.${name} or onCalendar;
             RandomizedDelaySec = "5m";
-            Persistent = true;
           };
           inherit pruneOpts;
           backupPrepareCommand = lib.concatStringsSep "\n" ([ "set -e" ] ++ request.beforeBackup);

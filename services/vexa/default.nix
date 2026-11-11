@@ -24,7 +24,6 @@
       "restic-vexa" = {
         purpose = "Vexa backup encryption password";
         owner = "root";
-        restart = [ "restic-backups-vexa.service" ];
         generate = { format = "hex"; bytes = 32; };
       };
     };
