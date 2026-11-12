@@ -32,6 +32,20 @@ name also sets its hostname. Login modules, SOPS ciphertext and service settings
 stay in the machine directory. Shared stacks are imported from `stacks/<name>`
 for the machine and its access or admin groups, preserving relative asset paths.
 
+A flake of your own keeps its outputs by passing them as `outputs`. Your hosts
+build beside the declared machines, and one with a declared machine's name is
+built your way:
+
+```nix
+outputs = { self, nixpkgs, ryra-template, ... }@inputs:
+  ryra-template.lib.mkOrganization {
+    inherit self inputs;
+    outputs.nixosConfigurations.lab = nixpkgs.lib.nixosSystem {
+      modules = [ ./hosts/lab.nix ];
+    };
+  };
+```
+
 Commit the organization's root `flake.lock` to pin dependencies. Adding a machine
 preserves the existing flake and lock; custom template inputs must already be
 available in that root. Export the whole project and select `.#<name>` to build

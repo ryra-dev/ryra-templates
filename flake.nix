@@ -95,7 +95,9 @@
             index = source.index;
           }) registries;
         };
-      mkOrganization = { self, inputs ? {} }:
+      # `outputs` are a flake's own, kept beside the machines organization.toml declares. A host of
+      # its own wins over a declared machine of the same name, which it then builds its own way.
+      mkOrganization = { self, inputs ? {}, outputs ? {} }:
         let
           declaration = builtins.fromTOML (builtins.readFile (self + "/organization.toml"));
           machines = builtins.listToAttrs (map (machine: {
@@ -116,13 +118,14 @@
           }) (builtins.filter (machine: machine ? template || builtins.pathExists
             (self + "/${machine.config or "machines/${machine.name}"}/configuration.nix"))
             (declaration.machines or [])));
-        in {
-          nixosConfigurations = nixpkgs.lib.foldl' (outputs: machine:
-            if builtins.any (name: outputs ? ${name}) (builtins.attrNames machine.nixosConfigurations)
+        in outputs // {
+          nixosConfigurations = nixpkgs.lib.foldl' (built: machine:
+            if builtins.any (name: built ? ${name}) (builtins.attrNames machine.nixosConfigurations)
             then throw "Ryra machine names collide with a generated HTTPS bootstrap output. Rename the conflicting machine."
-            else outputs // machine.nixosConfigurations
-          ) {} (builtins.attrValues machines);
-          ryraCatalog = builtins.mapAttrs (_: machine: machine.ryraCatalog) machines;
+            else built // machine.nixosConfigurations
+          ) {} (builtins.attrValues machines) // outputs.nixosConfigurations or {};
+          ryraCatalog = builtins.mapAttrs (_: machine: machine.ryraCatalog) machines
+            // outputs.ryraCatalog or {};
         };
     in {
       lib = {
