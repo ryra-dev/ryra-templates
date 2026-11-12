@@ -124,15 +124,18 @@ in
 
     systemd.services.ryra-local-https = {
       description = "Ryra machine leaf certificate for local HTTPS";
-      wantedBy = [ "multi-user.target" ];
+      # Wanted by nginx, not only ordered before it: a switch restarts changed units in one batch
+      # and starts new ones in a later batch, so on the switch that adds the first private app
+      # nginx would restart, and fail, before this unit ran.
+      wantedBy = [ "multi-user.target" "nginx.service" ];
       before = [ "nginx.service" ];
       serviceConfig = {
         Type = "oneshot";
         RemainAfterExit = true;
       };
       script = lib.getExe issue;
-      # A switch restarts nginx before it starts this, so nginx would go on presenting the
-      # certificate from before the names changed, and the deploy's health check refuses it.
+      # A switch that changes the names restarts both, and nginx can come up holding the leaf
+      # from before them, which the deploy's health check refuses.
       postStart = "${pkgs.systemd}/bin/systemctl kill -s HUP nginx.service || true";
     };
 

@@ -149,7 +149,12 @@
         auth-authelia-lldap = import ./lib/auth-provider.nix;
         backup-restic = import ./lib/backup-providers/restic.nix;
         default = {
-          imports = [ disko.nixosModules.disko sops-nix.nixosModules.sops ./modules/default.nix ];
+          imports = [
+            disko.nixosModules.disko
+            sops-nix.nixosModules.sops
+            (import ./modules/sops-install-secrets.nix { revision = sops-nix.rev or null; })
+            ./modules/default.nix
+          ];
         };
         azure = import ./modules/azure.nix;
         confidential = import ./modules/confidential.nix;
@@ -179,9 +184,16 @@
         description = meta.summary;
         welcomeText = meta.description;
       }) self.index.machines // nixpkgs.lib.optionalAttrs (self.index.machines ? base) { default = self.templates.base; };
-      packages = nixpkgs.lib.genAttrs [ "aarch64-darwin" "aarch64-linux" "x86_64-linux" ] (system:
-        builtins.mapAttrs (_: svc: svc.package nixpkgs.legacyPackages.${system})
-          (nixpkgs.lib.filterAttrs (_: svc: svc ? package) self.ryraServices));
+      packages = nixpkgs.lib.recursiveUpdate
+        (nixpkgs.lib.genAttrs [ "aarch64-darwin" "aarch64-linux" "x86_64-linux" ] (system:
+          builtins.mapAttrs (_: svc: svc.package nixpkgs.legacyPackages.${system})
+            (nixpkgs.lib.filterAttrs (_: svc: svc ? package) self.ryraServices)))
+        {
+          x86_64-linux.sops-install-secrets-release = import ./lib/sops-install-secrets-release.nix {
+            pkgs = nixpkgs.legacyPackages.x86_64-linux;
+            inherit sops-nix;
+          };
+        };
       validate = builtins.concatLists (builtins.attrValues (builtins.mapAttrs (name: svc:
         let missing = field: if (svc.meta or {}) ? ${field} then [] else [ "${name}: missing meta.${field}." ];
         in missing "summary" ++ (if svc ? module then missing "optionRoot" else [])

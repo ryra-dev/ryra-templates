@@ -4,6 +4,7 @@ let
   services = if serviceSource == null then templates
     else builtins.getFlake serviceSource;
   lib = templates.inputs.nixpkgs.lib;
+  ports = import ../lib/ports.nix;
   makeSystem = selectedServices: templates.inputs.nixpkgs.lib.nixosSystem {
     system = "x86_64-linux";
     modules = [
@@ -88,7 +89,7 @@ let
       domain = lib.mkOverride 60 "${name}.example.com";
       privateHttps = access == "private";
       externalUrl = if access == "private" then
-        "https://apps.example.com:${toString c.ryra.services.web.${name}.port}" else null;
+        "https://${name}.machine.home.arpa:${toString c.ryra.services.web.${name}.port}" else null;
       inherit certificate;
     });
   } ]; };
@@ -97,16 +98,13 @@ let
   dns = { mode = "dns"; dnsProvider = "rfc2136"; credentialsFile = "/run/secrets/acme-dns"; };
   dnsSystem = directSystem "public" dns;
   d = dnsSystem.config;
-  privateDns = (directSystem "private" dns).config;
   refusedDns = certificate: builtins.any (a: !a.assertion) (dnsSystem.extendModules {
     modules = [ { ryra.services.web.grafana.certificate = certificate; } ];
   }).config.assertions;
   supplied = { mode = "supplied"; certificateFile = "/run/certs/fullchain.pem"; keyFile = "/run/certs/key.pem"; };
   suppliedSystem = directSystem "public" supplied;
   s = suppliedSystem.config;
-  privateSupplied = (directSystem "private" supplied).config;
   defaultSupplied = (directSystem "public" { mode = "supplied"; }).config;
-  privateDefaultSupplied = (directSystem "private" { mode = "supplied"; }).config;
   refusedSupplied = certificate: builtins.any (a: !a.assertion) (suppliedSystem.extendModules {
     modules = [ { ryra.services.web.grafana.certificate = certificate; } ];
   }).config.assertions;
@@ -200,8 +198,8 @@ else if httpCheck then pkgs.runCommand "ryra-gateway-http-check" {
   touch "$out"
 '' else
 assert lib.assertMsg (failures == []) (lib.concatStringsSep "\n" failures);
-assert c.ryra.services.web.nextcloud.url == "https://apps.example.ts.net:8082";
-assert c.ryra.services.web.grafana.url == "https://apps.example.ts.net:8083";
+assert c.ryra.services.web.nextcloud.url == "https://apps.example.ts.net:${toString ports.nextcloud.frontDoor}";
+assert c.ryra.services.web.grafana.url == "https://apps.example.ts.net:${toString ports.grafana.frontDoor}";
 assert builtins.all (name:
   builtins.all (listen: listen.addr == "127.0.0.1" && !listen.ssl)
     c.services.nginx.virtualHosts."${name}.localhost".listen &&
@@ -209,10 +207,11 @@ assert builtins.all (name:
   !(lib.hasInfix "funnel" c.systemd.services."ryra-serve-${name}".script) &&
   c.systemd.services."ryra-serve-${name}".serviceConfig.Restart == "always"
 ) [ "nextcloud" "grafana" ];
-assert builtins.sort builtins.lessThan c.networking.firewall.interfaces.tailscale0.allowedTCPPorts == [ 8082 8083 ];
+assert builtins.sort builtins.lessThan c.networking.firewall.interfaces.tailscale0.allowedTCPPorts
+  == builtins.sort builtins.lessThan [ ports.nextcloud.frontDoor ports.grafana.frontDoor ];
 assert c.networking.firewall.allowedTCPPorts == [];
 assert c.security.acme.certs == {};
-assert builtins.elem "apps.example.ts.net:8082" c.services.nextcloud.settings.trusted_domains;
+assert builtins.elem "apps.example.ts.net:${toString ports.nextcloud.frontDoor}" c.services.nextcloud.settings.trusted_domains;
 assert refused { services.tailscale.enable = lib.mkForce false; };
 assert refused { ryra.services.web.grafana.domain = lib.mkForce "apps.example.com"; };
 assert refused { ryra.services.web.grafana.privateHttps = true; };
@@ -226,8 +225,8 @@ assert c.ryra.grafana.backup.result.restoreScript == null;
 assert lib.assertMsg (namedFailures == []) (lib.concatStringsSep "\n" namedFailures);
 assert n.ryra.services.web.nextcloud.url == "https://files.example.ts.net";
 assert n.ryra.services.web.grafana.url == "https://metrics.example.ts.net";
-assert n.ryra.services.web.nextcloud.port == 8082;
-assert n.ryra.services.web.grafana.port == 8083;
+assert n.ryra.services.web.nextcloud.port == ports.nextcloud.frontDoor;
+assert n.ryra.services.web.grafana.port == ports.grafana.frontDoor;
 assert n.ryra.services.web.nextcloud.audience == "machine_users";
 assert n.ryra.services.web.grafana.audience == "tailnet_members";
 assert builtins.all (name:
@@ -266,8 +265,8 @@ assert n.security.acme.certs == {};
 assert builtins.elem "files.example.ts.net" n.services.nextcloud.settings.trusted_domains;
 assert n.services.grafana.settings.server.root_url == "https://metrics.example.ts.net/";
 assert builtins.attrNames n.sops.secrets == builtins.attrNames c.sops.secrets;
-assert mixed.networking.firewall.interfaces.tailscale0.allowedTCPPorts == [ 8083 ];
-assert mixed.ryra.services.web.grafana.url == "https://apps.example.ts.net:8083";
+assert mixed.networking.firewall.interfaces.tailscale0.allowedTCPPorts == [ ports.grafana.frontDoor ];
+assert mixed.ryra.services.web.grafana.url == "https://apps.example.ts.net:${toString ports.grafana.frontDoor}";
 assert mixed.ryra.services.web.nextcloud.url == "https://files.example.ts.net";
 assert !(removed.systemd.services ? ryra-serve-grafana);
 assert removed.systemd.services ? ryra-serve-nextcloud;
@@ -276,9 +275,9 @@ assert refusedNamed { ryra.services.web.grafana.domain = lib.mkForce "metrics.ex
 assert refusedNamed { ryra.services.web.grafana.domain = lib.mkForce "files.example.ts.net"; };
 assert refusedNamed { ryra.services.web.grafana.hostTags = lib.mkForce []; };
 assert refusedNamed { ryra.services.web.grafana.hostTags = lib.mkForce [ "ryra" ]; };
-assert refusedNamed { ryra.services.web.grafana.externalUrl = "https://metrics.example.ts.net:8083"; };
+assert refusedNamed { ryra.services.web.grafana.externalUrl = "https://metrics.example.ts.net:${toString ports.grafana.frontDoor}"; };
 assert refusedNamed { ryra.services.web.grafana.privateHttps = true; };
-assert refusedNamed { ryra.services.web.grafana.port = 8082; };
+assert refusedNamed { ryra.services.web.grafana.port = ports.nextcloud.frontDoor; };
 assert lib.assertMsg (gatewayFailures == []) (lib.concatStringsSep "\n" gatewayFailures);
 assert builtins.all (name:
   g.ryra.services.web.${name}.url == "https://${name}.example.com" &&
@@ -308,7 +307,7 @@ assert refusedGateway { ryra.services.web.grafana.provider = lib.mkForce "ryra/g
 assert refusedGateway { ryra.services.web.grafana.domain = lib.mkForce null; };
 assert refusedGateway { ryra.services.web.grafana.domain = lib.mkForce "http://metrics.example.com"; };
 assert refusedGateway { ryra.services.web.grafana.domain = lib.mkForce "nextcloud.example.com"; };
-assert refusedGateway { ryra.services.web.grafana.port = 8082; };
+assert refusedGateway { ryra.services.web.grafana.port = ports.nextcloud.frontDoor; };
 assert refusedGateway { ryra.services.web.grafana.port = 443; };
 assert refusedGateway { ryra.services.web.grafana.privateHttps = true; };
 assert refusedGateway { ryra.services.web.grafana.externalUrl = "https://elsewhere.example.com"; };
@@ -317,7 +316,7 @@ assert refused { ryra.services.web.grafana.provider = "fixture/gateway"; };
 assert builtins.all (config:
   let errors = map (a: a.message) (builtins.filter (a: !a.assertion) config.assertions);
   in lib.assertMsg (errors == []) (lib.concatStringsSep "\n" errors)
-) [ p h d privateDns s privateSupplied defaultSupplied privateDefaultSupplied switched ];
+) [ p h d s defaultSupplied switched ];
 assert p.networking.firewall.allowedTCPPorts == [ 80 443 ];
 assert builtins.all (name:
   p.ryra.services.web.${name}.certificate.mode == "automatic" &&
@@ -336,20 +335,16 @@ assert builtins.all (name:
   d.security.acme.certs."${name}.example.com".reloadServices == [ "nginx.service" ]
 ) [ "nextcloud" "grafana" ];
 assert d.networking.firewall.allowedTCPPorts == [ 443 ];
-assert h.networking.firewall.allowedTCPPorts == [ 80 ];
-assert h.networking.hosts."127.0.0.1" == [ "apps.example.com" ];
-assert builtins.attrNames h.security.acme.certs == [ "apps.example.com" ];
-assert h.security.acme.certs."apps.example.com".webroot == "/var/lib/acme/acme-challenge";
-assert h.services.nginx.virtualHosts."ryra-acme-apps.example.com".locations."/".return == "404";
-assert privateDns.networking.firewall.allowedTCPPorts == [];
-assert builtins.attrNames privateDns.services.nginx.virtualHosts == [ "grafana.localhost" "nextcloud.localhost" ];
-assert builtins.attrNames privateDns.security.acme.certs == [ "apps.example.com" ];
-assert privateDns.security.acme.certs."apps.example.com".dnsProvider == "rfc2136";
-assert builtins.all (config:
-  builtins.all (name: builtins.all (listen: listen.addr == "127.0.0.1" && listen.ssl)
-    config.services.nginx.virtualHosts."${name}.localhost".listen) [ "nextcloud" "grafana" ] &&
-  config.ryra.services.state == c.ryra.services.state
-) [ h privateDns ];
+assert h.networking.firewall.allowedTCPPorts == [];
+assert h.networking.hosts."127.0.0.1" == [ "grafana.machine.home.arpa" "nextcloud.machine.home.arpa" ];
+assert h.security.acme.certs == {};
+assert builtins.all (name:
+  h.services.nginx.virtualHosts."${name}.localhost".sslCertificate == "/var/lib/ryra/local-https/leaf.pem" &&
+  builtins.all (listen: listen.addr == "127.0.0.1" && listen.ssl)
+    h.services.nginx.virtualHosts."${name}.localhost".listen
+) [ "nextcloud" "grafana" ];
+assert h.ryra.services.state == c.ryra.services.state;
+assert builtins.elem "nginx.service" h.systemd.services.ryra-local-https.wantedBy;
 assert refusedDns { credentialsFile = lib.mkForce null; };
 assert refusedDns { dnsProvider = lib.mkForce null; };
 assert refusedDns { dnsProvider = lib.mkForce ""; };
@@ -361,12 +356,9 @@ assert refused { ryra.services.web.grafana.certificate = dns; };
 assert refusedNamed { ryra.services.web.grafana.certificate = dns; };
 assert refusedGateway { ryra.services.web.grafana.certificate = dns; };
 assert s.networking.firewall.allowedTCPPorts == [ 443 ];
-assert privateSupplied.networking.firewall.allowedTCPPorts == [];
 assert builtins.all (name:
   defaultSupplied.ryra.services.web.${name}.certificate.certificateFile == "/var/lib/ryra/certificates/${name}.example.com/fullchain.pem" &&
   defaultSupplied.ryra.services.web.${name}.certificate.keyFile == "/var/lib/ryra/certificates/${name}.example.com/key.pem" &&
-  privateDefaultSupplied.ryra.services.web.${name}.certificate.certificateFile == "/var/lib/ryra/certificates/apps.example.com/fullchain.pem" &&
-  privateDefaultSupplied.ryra.services.web.${name}.certificate.keyFile == "/var/lib/ryra/certificates/apps.example.com/key.pem" &&
   builtins.elem "d /var/lib/ryra/certificates/${name}.example.com 0750 root nginx -" defaultSupplied.systemd.tmpfiles.rules
 ) [ "nextcloud" "grafana" ];
 assert builtins.all (config:
@@ -375,18 +367,13 @@ assert builtins.all (config:
   builtins.length config.systemd.services.nginx.serviceConfig.ExecReload == 3 &&
   config.systemd.services.nginx.serviceConfig.User == config.services.nginx.user &&
   builtins.any (package: (package.name or "") == "ryra-check-certificates") config.environment.systemPackages
-) [ s privateSupplied defaultSupplied privateDefaultSupplied ];
+) [ s defaultSupplied ];
 assert !(lib.hasInfix "ryra-check-certificates" p.services.nginx.preStart);
 assert builtins.length p.systemd.services.nginx.serviceConfig.ExecReload == 2;
-assert builtins.all (config:
-  config.security.acme.certs == {} && !config.security.acme.acceptTerms
-) [ s privateSupplied ];
+assert s.security.acme.certs == {} && !s.security.acme.acceptTerms;
 assert builtins.all (name:
-  builtins.all (host: host.onlySSL && !host.enableACME && host.useACMEHost == null &&
-    host.sslCertificate == supplied.certificateFile && host.sslCertificateKey == supplied.keyFile
-  ) [ s.services.nginx.virtualHosts."${name}.example.com" privateSupplied.services.nginx.virtualHosts."${name}.localhost" ] &&
-  builtins.all (listen: listen.addr == "127.0.0.1" && listen.ssl)
-    privateSupplied.services.nginx.virtualHosts."${name}.localhost".listen &&
+  (let host = s.services.nginx.virtualHosts."${name}.example.com"; in host.onlySSL && !host.enableACME &&
+    host.useACMEHost == null && host.sslCertificate == supplied.certificateFile && host.sslCertificateKey == supplied.keyFile) &&
   switched.ryra.services.web.${name}.url == "http://127.0.0.1:${toString c.ryra.services.web.${name}.port}" &&
   switched.ryra.services.web.${name}.externalUrl == null
 ) [ "nextcloud" "grafana" ];
@@ -397,7 +384,7 @@ assert builtins.all (config:
   builtins.attrNames config.sops.secrets == builtins.attrNames c.sops.secrets &&
   config.services.nextcloud.settings."overwrite.cli.url" == config.ryra.services.web.nextcloud.url &&
   config.services.grafana.settings.server.root_url == "${config.ryra.services.web.grafana.url}/"
-) [ n g p h d privateDns s privateSupplied switched ];
+) [ n g p h d s switched ];
 assert refusedSupplied { keyFile = lib.mkForce null; };
 assert refusedSupplied { certificateFile = lib.mkForce null; };
 assert refusedSupplied { keyFile = lib.mkForce "/nix/store/private-key"; };
@@ -411,9 +398,6 @@ assert refusedSupplied { mode = lib.mkForce "automatic"; };
 assert refused { ryra.services.web.grafana.certificate = supplied; };
 assert refusedNamed { ryra.services.web.grafana.certificate = supplied; };
 assert refusedGateway { ryra.services.web.grafana.certificate = supplied; };
-assert builtins.any (a: !a.assertion) ((directSystem "private" dns).extendModules { modules = [ {
-  ryra.services.web.grafana.certificate.credentialsFile = lib.mkForce "/run/secrets/other-dns";
-} ]; }).config.assertions;
 {
   inherit failures namedFailures gatewayFailures;
   apps = builtins.fromJSON c.environment.etc."ryra/apps.json".text;
