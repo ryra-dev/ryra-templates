@@ -6,7 +6,11 @@
 { revision }:
 { lib, pkgs, ... }:
 let
-  published = { };
+  published = {
+    revision = "13616fff713a9f94055c66f15687ebdc17a335df";
+    x86_64-linux = "sha256-QYQPgk3A0rfa9MOMZ3ByUQkqllyzO6E8dxsxIoolAiM=";
+    aarch64-linux = "sha256-nk/3/k2GZS1rYlSGxzFUePoo5kwZI2/xWhdKmbLy6k8=";
+  };
   system = pkgs.stdenv.hostPlatform.system;
 in
 {
