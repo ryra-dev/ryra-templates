@@ -17,9 +17,8 @@ let
     destination = ''"$out"'';
   });
 in {
-  disabledModules = [ ./hardware.nix ];
   ryra.desktop.enable = lib.mkDefault false;
-  imports = [ (modulesPath + "/virtualisation/qemu-vm.nix") ];
+  imports = [ ./own.nix (modulesPath + "/virtualisation/qemu-vm.nix") ];
 
   virtualisation = {
     memorySize = lib.mkDefault 4096;
@@ -57,6 +56,4 @@ in {
 
   # qemu-vm directly boots the kernel and creates an ext4 writable disk.
   boot.loader.grub.enable = false;
-  systemd.services.ryra-snapshot-prune.enable = false;
-  systemd.timers.ryra-snapshot-prune.enable = false;
 }

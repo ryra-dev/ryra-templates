@@ -32,10 +32,10 @@ let
       bootPaths = map (b: { inherit (b) path efiSysMountPoint devices; }) c.boot.loader.grub.mirroredBoots;
       lima = c.services.lima.enable or false;
       rootFs = c.fileSystems."/".fsType;
-      espSize = c.disko.devices.disk.main.content.partitions.ESP.size;
-      disk = c.disko.devices.disk.main.device;
-      snapshots = c.systemd.timers.ryra-snapshot-prune.enable;
-      biosPartition = builtins.hasAttr "boot" c.disko.devices.disk.main.content.partitions;
+      espSize = c.disko.devices.disk.main.content.partitions.ESP.size or null;
+      disk = c.disko.devices.disk.main.device or null;
+      snapshots = c.systemd.timers.ryra-snapshot-prune.enable or false;
+      biosPartition = builtins.hasAttr "boot" (c.disko.devices.disk.main.content.partitions or {});
       desktop = builtins.hasAttr "ryra-desktop@" c.systemd.services;
       azure = c.services.waagent.enable;
       earlyoom = c.services.earlyoom.enable;

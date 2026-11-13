@@ -20,7 +20,7 @@ in
 assert config.boot.isContainer;
 assert config.disko.devices.disk == {};
 assert !config.boot.loader.grub.enable;
-assert !config.systemd.timers.ryra-snapshot-prune.enable;
+assert !(config.systemd.timers ? ryra-snapshot-prune);
 assert config.networking.firewall.enable;
 assert builtins.elem 22 config.networking.firewall.allowedTCPPorts;
 assert config.nix.buildMachines == [];

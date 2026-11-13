@@ -12,8 +12,13 @@ What a machine runs on is measured, not chosen. Ryra writes
 ```
 
 `mkMachine` sets `nixpkgs.hostPlatform` from `system` and imports the platform's
-module, `azure`, `lima` or `qemu`, when there is one. A machine without the file
-states its architecture itself. The desktop is on by default; the local VM
+module, `azure`, `lima`, `qemu` or `confidential`, when there is one. Without one,
+the machine gets the disk layout and boot loader Ryra installs. A machine that keeps
+its own, such as a cloud's NixOS image or a box installed by hand, is
+`"platform": "own"`, the one platform that is chosen rather than measured, and its
+disk and boot settings go in its own `modules/`; on AWS that is an import of nixpkgs'
+`virtualisation/amazon-image.nix`. A machine without the file states its
+architecture itself. The desktop is on by default; the local VM
 platforms switch it off, and `ryra.desktop.enable` overrides either way.
 
 The desktop starts on demand through `ryra desktop`, with automatic sign-in
@@ -103,9 +108,10 @@ Declare stable HTTPS app origins through the existing web configuration, and
 declare directory bootstrap, access policy and HTTPS routing in machine modules.
 
 The shared defaults include zram, earlyoom, SSH scheduling and memory protection,
-lower build scheduling weights, low-disk Nix garbage collection, a journal cap,
-and daily pruning of deployment snapshots older than 30 days while retaining the
-newest three per directory. Nix defaults to one build job and two compiler cores;
+lower build scheduling weights, low-disk Nix garbage collection and a journal cap.
+The disk layout Ryra installs adds a snapshot before each switch and daily pruning
+of those older than 30 days, retaining the newest three per directory. Nix defaults
+to one build job and two compiler cores;
 dedicated builders can override `nix.settings.max-jobs` and `nix.settings.cores`.
 Workloads have no hard CPU or RAM quotas.
 See [Machine networking](../NETWORKING.md) for optional Tailscale and private SSH.

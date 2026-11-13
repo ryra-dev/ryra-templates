@@ -200,13 +200,33 @@ let bios = pkgs.stdenv.hostPlatform.isx86_64; in
   # discards everything written since, including work somebody did in the
   # meantime. It is a decision, not an undo button.
   #
-  # resources.nix expires snapshots after 30 days, retaining at least the
-  # newest three of each kind. These snapshots still share the live data disk.
+  # These snapshots still share the live data disk, so the timer below expires them.
   system.preSwitchChecks.btrfsSnapshot = ''
     stamp=$(${pkgs.coreutils}/bin/date --utc '+%y%m%dT%H%M%S')
     ${pkgs.btrfs-progs}/bin/btrfs subvolume snapshot -r /home "/.snapshots/home-$stamp"
     ${pkgs.btrfs-progs}/bin/btrfs subvolume snapshot -r /var/lib "/.snapshots/var-lib-$stamp"
   '';
+
+  # Only template-named, read-only snapshots are eligible. Keep 30 days and
+  # always retain the newest three of each kind for recovery.
+  systemd.services.ryra-snapshot-prune = {
+    description = "Prune expired Ryra deployment snapshots";
+    path = [ pkgs.btrfs-progs ];
+    serviceConfig = {
+      Type = "oneshot";
+      ExecStart = "${pkgs.python3}/bin/python3 ${./maintenance/prune-snapshots.py}";
+      Nice = 10;
+      IOSchedulingClass = "idle";
+    };
+  };
+  systemd.timers.ryra-snapshot-prune = {
+    wantedBy = [ "timers.target" ];
+    timerConfig = {
+      OnCalendar = "daily";
+      Persistent = true;
+      RandomizedDelaySec = "15m";
+    };
+  };
 
   # Checksums only tell you about a block somebody read. A scrub is what reads
   # all of them, so this is what turns "btrfs can detect corruption" into "this

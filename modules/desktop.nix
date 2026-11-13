@@ -40,6 +40,8 @@ let
 in {
   options.ryra.desktop.enable = lib.mkEnableOption "the Ryra virtual desktop" // { default = true; };
   config = lib.mkIf config.ryra.desktop.enable {
+    # Cloud images such as nixpkgs' amazon-image turn udisks2 off, and GNOME needs it.
+    services.udisks2.enable = lib.mkForce true;
     environment.systemPackages = with pkgs; [
       helper wallpaper firefox gnome-console gnome-control-center
     ];

@@ -160,6 +160,7 @@
           ];
         };
         azure = import ./modules/azure.nix;
+        own = import ./modules/own.nix;
         confidential = import ./modules/confidential.nix;
         azure-image = import ./modules/azure-image;
         cloud-init = import ./modules/cloud-init.nix;

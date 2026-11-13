@@ -1,5 +1,5 @@
 # Keep recovery access responsive without imposing workload CPU or memory caps.
-{ lib, pkgs, ... }:
+{ lib, ... }:
 {
   systemd.services.sshd.serviceConfig = {
     CPUWeight = 1000;
@@ -25,26 +25,5 @@
   services.journald.settings.Journal = {
     SystemMaxUse = "512M";
     SystemKeepFree = "1G";
-  };
-
-  # Only template-named, read-only snapshots are eligible. Keep 30 days and
-  # always retain the newest three of each kind for recovery.
-  systemd.services.ryra-snapshot-prune = {
-    description = "Prune expired Ryra deployment snapshots";
-    path = [ pkgs.btrfs-progs ];
-    serviceConfig = {
-      Type = "oneshot";
-      ExecStart = "${pkgs.python3}/bin/python3 ${./maintenance/prune-snapshots.py}";
-      Nice = 10;
-      IOSchedulingClass = "idle";
-    };
-  };
-  systemd.timers.ryra-snapshot-prune = {
-    wantedBy = [ "timers.target" ];
-    timerConfig = {
-      OnCalendar = "daily";
-      Persistent = true;
-      RandomizedDelaySec = "15m";
-    };
   };
 }

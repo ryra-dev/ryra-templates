@@ -1,8 +1,7 @@
 # NixOS under Lima: the platform is independent of the services on the machine.
 { lib, modulesPath, ... }:
 {
-  disabledModules = [ ./hardware.nix ];
-  imports = [ (modulesPath + "/profiles/qemu-guest.nix") ./lima-boot.nix ];
+  imports = [ ./own.nix (modulesPath + "/profiles/qemu-guest.nix") ./lima-boot.nix ];
 
   services.lima.enable = true;
   # A local VM is reached from the Mac it runs on, which already has the desktop.
@@ -54,7 +53,4 @@
     autoResize = true;
   };
   fileSystems."/boot".device = lib.mkForce "/dev/disk/by-label/ESP";
-  # This profile uses ext4, so it cannot provide the cloud profile's btrfs snapshots.
-  systemd.services.ryra-snapshot-prune.enable = false;
-  systemd.timers.ryra-snapshot-prune.enable = false;
 }

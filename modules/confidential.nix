@@ -1,9 +1,7 @@
 { config, lib, machineDir, ... }:
 {
-  disabledModules = [ ./hardware.nix ];
+  imports = [ ./own.nix ];
   ryra.desktop.enable = lib.mkDefault false;
-  systemd.services.ryra-snapshot-prune.enable = false;
-  systemd.timers.ryra-snapshot-prune.enable = false;
 
   assertions = [
     {
