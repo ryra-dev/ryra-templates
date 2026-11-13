@@ -160,6 +160,7 @@
           ];
         };
         azure = import ./modules/azure.nix;
+        azure-guest = import ./modules/azure-guest.nix;
         own = import ./modules/own.nix;
         confidential = import ./modules/confidential.nix;
         azure-image = import ./modules/azure-image;
