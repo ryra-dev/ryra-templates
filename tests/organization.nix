@@ -27,6 +27,9 @@ let
   };
 in
 assert builtins.attrNames organization.nixosConfigurations == [ "one" "two" ];
+assert builtins.attrNames organization.checks.x86_64-linux == [ "one" "two" ];
+assert organization.checks.x86_64-linux.one.drvPath
+  == organization.nixosConfigurations.one.config.system.build.toplevel.drvPath;
 assert builtins.attrNames composed.nixosConfigurations == [ "lab" "one" "two" ];
 assert composed.nixosConfigurations.lab.config.networking.hostName == "lab";
 assert composed.nixosConfigurations.two.config.networking.hostName == "their-two";

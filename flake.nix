@@ -126,6 +126,11 @@
           ) {} (builtins.attrValues machines) // outputs.nixosConfigurations or {};
           ryraCatalog = builtins.mapAttrs (_: machine: machine.ryraCatalog) machines
             // outputs.ryraCatalog or {};
+          # `nix flake check` builds every declared machine, which is what an organization's CI runs.
+          checks = nixpkgs.lib.recursiveUpdate (nixpkgs.lib.foldl' (checks: name:
+            let toplevel = machines.${name}.nixosConfigurations.${name}.config.system.build.toplevel;
+            in nixpkgs.lib.recursiveUpdate checks { ${toplevel.system}.${name} = toplevel; }
+          ) {} (builtins.attrNames machines)) (outputs.checks or {});
         };
     in {
       lib = {
