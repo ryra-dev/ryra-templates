@@ -65,7 +65,7 @@ With the updated Ryra CLI, a saved organization checkout, a trusted installed
 host and a declared enrollment secret, run:
 
 ```sh
-ryra org machines tailscale <org> <machine>
+ryra machine tailscale <machine> --org <org>
 ```
 
 This exports the encrypted secret through Ryra's existing minting integration,

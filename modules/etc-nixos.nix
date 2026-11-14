@@ -22,7 +22,7 @@
 # needs Ryra: this template's own source and nixpkgs stay in the store with the system, and an
 # input a garbage collection removed comes from its own project, as on any NixOS machine.
 #
-# WHAT HAPPENS ON THE NEXT `ryra org machines apply`: the machine is built from the TREE, this
+# WHAT HAPPENS ON THE NEXT `ryra machine apply`: the machine is built from the TREE, this
 # runs again, and whatever was done here is replaced. That is not a flaw to design around, it is
 # what declarative means. A change worth keeping goes into the tree, into git, and gets reviewed
 # like any other. A change made here is a repair, and repairs are supposed to be temporary.

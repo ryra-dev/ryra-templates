@@ -1,7 +1,7 @@
 # Views
 
 Property views a new `.base` file can start from. Ryra lists them under
-**New view** and in `ryra catalog --views`, and
+**New view** and in `ryra catalog --only views`, and
 `ryra files --create NAME --view ryra/tasks` makes one from the command line.
 
 Each folder is one template:

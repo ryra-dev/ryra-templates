@@ -17,10 +17,10 @@ Whole organization starters can live here later; none are published today.
 Register a fork once for its services, machines and views:
 
 ```sh
-ryra catalog --org ORG --add-source team=github:TEAM/ryra-templates
+ryra org catalog add ORG team=github:TEAM/ryra-templates
 ryra catalog --org ORG
-ryra catalog --org ORG --templates
-ryra catalog --org ORG --views
+ryra catalog --org ORG --only templates
+ryra catalog --org ORG --only views
 ```
 
 Use namespace `ryra` instead of `team` to replace the built-in source.

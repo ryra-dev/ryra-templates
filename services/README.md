@@ -53,8 +53,8 @@ The desktop Services page and `ryra catalog --org ORG` read the same organizatio
 repository list. Add repositories without replacing the existing ones:
 
 ```sh
-ryra catalog --org ORG --add-source acme=github:acme/ryra-templates
-ryra catalog --org ORG --add-source partner=git+https://forge.example/partner/ryra-templates.git
+ryra org catalog add ORG acme=github:acme/ryra-templates
+ryra org catalog add ORG partner=git+https://forge.example/partner/ryra-templates.git
 ```
 
 All configured repositories are used together, alongside the default
