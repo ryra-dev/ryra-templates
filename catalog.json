@@ -1,7 +1,7 @@
 {
   "machines": {
     "base": {
-      "description": "# ryra/base\n\nThe NixOS machine Ryra installs, deploys and can roll back. There is one template:\nwhat a machine runs on is not a choice. Ryra measures it and writes\n`modules/ryra/hardware.json`, its architecture and, where it needs one, the\nplatform module (`azure`, `lima` or `qemu`), the way NixOS writes\n`hardware-configuration.nix`.\n\nThe organization's root flake pins shared modules through the `ryra-template`\ninput; commit its root `flake.lock`. Generated logins, SOPS secrets and service\nsettings stay in this machine's own `modules/` directory.\n\nAdd local settings in `modules/machine.nix` or another `.nix` file anywhere under\n`modules/`; these are imported automatically. `modules/ryra/settings.nix` is\nconsumed separately by the service module. Leave the generated hardware, login and\nsecret files to Ryra.\n\nFrom the organization root,\n`nix eval --raw .#nixosConfigurations.<name>.config.system.build.toplevel.drvPath`\nevaluates this machine without deploying it. A store path means it evaluates.\n",
+      "description": "# ryra/base\n\nThe NixOS machine Ryra installs, deploys and can roll back. There is one template:\nwhat a machine runs on is not a choice. Ryra measures it and writes\n`modules/ryra/hardware.json`, its architecture and, where it needs one, the\nplatform module (`azure`, `lima` or `qemu`), the way NixOS writes\n`hardware-configuration.nix`. A machine Ryra has not measured says so itself:\n`\"platform\": \"own\"` when it brings its own disk and boot loader, which then go in\n`modules/`.\n\nThe organization's root flake pins shared modules through the `ryra-template`\ninput; commit its root `flake.lock`. Generated logins, SOPS secrets and service\nsettings stay in this machine's own `modules/` directory.\n\nAdd local settings in `modules/machine.nix` or another `.nix` file anywhere under\n`modules/`; these are imported automatically. `modules/ryra/settings.nix` is\nconsumed separately by the service module. Leave the generated login and secret\nfiles to Ryra.\n\nFrom the organization root,\n`nix eval --raw .#nixosConfigurations.<name>.config.system.build.toplevel.drvPath`\nevaluates this machine without deploying it. A store path means it evaluates.\n",
       "directory": "machines/base",
       "summary": "A NixOS machine Ryra installs, deploys and can roll back",
       "title": "NixOS machine"
@@ -306,33 +306,12 @@
             ],
             "kind": "token",
             "page": "https://github.com/settings/personal-access-tokens/new?name=Ryra&description=Repository%20access%20and%20machine%20deploy%20keys&expires_in=90&contents=write&administration=write",
-            "scopes": "Browser sign-in requests repository read/write access. Use a fine-grained personal access token to select specific repositories. Contents write allows pushing; Administration write allows creating deploy keys."
-          },
-          "driver": {
-            "command": [
-              "ryra-adapter-gh"
-            ],
-            "configuration": {
-              "client_id": "",
-              "client_secret": ""
-            },
-            "required": [
-              "client_id",
-              "client_secret"
-            ]
+            "scopes": "Use a fine-grained personal access token to select specific repositories. Contents write allows pushing; Administration write allows creating deploy keys."
           },
           "environment": {
             "GH_TOKEN": "token"
           },
           "label": "GitHub",
-          "settings": {
-            "/driver/configuration/client_id": {
-              "env": "RYRA_GITHUB_CLIENT_ID"
-            },
-            "/driver/configuration/client_secret": {
-              "env": "RYRA_GITHUB_CLIENT_SECRET"
-            }
-          },
           "verify": {
             "headers": {
               "Authorization": "Bearer {token}"
@@ -353,7 +332,6 @@
       "deployable": true,
       "needs": [],
       "optionRoot": [],
-      "package": "gh",
       "provides": [],
       "secretAliases": {},
       "secrets": {},

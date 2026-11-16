@@ -19,7 +19,6 @@
 # declared on the machine; installing the tool alone does not request anyone's sign-in.
 #
 {
-  package = pkgs: import ../../adapters/package.nix { inherit pkgs; service = "gh"; };
   meta = {
     title = "GitHub";
     auth.github = {
@@ -28,22 +27,13 @@
       connect = {
         kind = "token";
         page = "https://github.com/settings/personal-access-tokens/new?name=Ryra&description=Repository%20access%20and%20machine%20deploy%20keys&expires_in=90&contents=write&administration=write";
-        scopes = "Browser sign-in requests repository read/write access. Use a fine-grained personal access token to select specific repositories. Contents write allows pushing; Administration write allows creating deploy keys.";
+        scopes = "Use a fine-grained personal access token to select specific repositories. Contents write allows pushing; Administration write allows creating deploy keys.";
         fields = [ "token" ];
       };
       verify = {
         url = "https://api.github.com/user";
         headers.Authorization = "Bearer {token}";
         present = [ "/id" "/login" ];
-      };
-      driver = {
-        command = [ "ryra-adapter-gh" ];
-        configuration = { client_id = ""; client_secret = ""; };
-        required = [ "client_id" "client_secret" ];
-      };
-      settings = {
-        "/driver/configuration/client_id".env = "RYRA_GITHUB_CLIENT_ID";
-        "/driver/configuration/client_secret".env = "RYRA_GITHUB_CLIENT_SECRET";
       };
       environment.GH_TOKEN = "token";
       carries = { at = ".config/gh/hosts.yml"; what = "your own GitHub sign-in"; };

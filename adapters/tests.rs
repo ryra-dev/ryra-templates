@@ -105,17 +105,11 @@ process.stdout.write = (chunk, ...args) => {{
                 response(&mut stream, "200 OK", "", r#"{"client_id":"11111111-2222-4333-8444-555555555555"}"#);
                 continue;
             }
-            if url.contains("/oauth/token") || url.contains("/oauth2/token") || url.contains("/oauth/access_token") {
+            if url.contains("/oauth/token") || url.contains("/oauth2/token") {
                 assert!(!bearer);
                 assert!(body.contains("client_id="));
-                let scope = if url.contains("github.com") { if body.contains("client_id=broad") { "repo admin:org" } else { "repo" } }
-                    else if url.contains("resend.com") { "full_access" } else { "zone:read offline_access" };
+                let scope = if url.contains("resend.com") { "full_access" } else { "zone:read offline_access" };
                 response(&mut stream, "200 OK", "", &format!(r#"{{"access_token":"connected-access","token_type":"bearer","scope":"{scope}","expires_in":3600,"refresh_token":"rotated-refresh"}}"#));
-                continue;
-            }
-            if url == "https://api.github.com/user" {
-                assert!(bearer);
-                response(&mut stream, "200 OK", "", r#"{"id":7}"#);
                 continue;
             }
             if url.contains("api.resend.com/domains") {
@@ -176,7 +170,6 @@ process.stdout.write = (chunk, ...args) => {{
     assert!(malformed.contains("\"code\":\"invalid_request\""));
     assert_eq!(seen.lock().expect("seen").len(), before);
     for (service, configuration, read) in [
-        ("gh", r#"{"client_id":"publisher","client_secret":"registration-secret"}"#, "https://api.github.com/user"),
         ("resend", "{}", "https://api.resend.com/domains?limit=1"),
         ("cloudflare", r#"{"client_id":"publisher","scopes":"zone:read"}"#, "https://api.cloudflare.com/client/v4/accounts?per_page=50&page=1"),
     ] {
@@ -189,10 +182,6 @@ process.stdout.write = (chunk, ...args) => {{
         assert!(seen.lock().expect("authenticated reads")[before..].iter().any(|url| url == read));
         if service == "cloudflare" { assert!(result.contains("\"account_id\":\"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\"")); }
     }
-    let changed = call(&root, &path, "gh", r#"{"version":1,"request":{"operation":"auth.refresh","state":{"registration":{"client_id":"publisher","client_secret":"registration-secret"},"account_id":8,"refresh_token":"saved-refresh"}}}"#);
-    assert!(changed.contains("\"code\":\"unauthorized\""));
-    let broad = call(&root, &path, "gh", r#"{"version":1,"request":{"operation":"auth.refresh","state":{"registration":{"client_id":"broad","client_secret":"registration-secret"},"account_id":7,"refresh_token":"saved-refresh"}}}"#);
-    assert!(broad.contains("\"code\":\"denied\""));
     let refreshed = call(&root, &path, "cloudflare", r#"{"version":1,"request":{"operation":"auth.refresh","state":{"client_id":"publisher","account_id":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","scopes":"zone:read offline_access","refresh_token":"saved-refresh"}}}"#);
     assert!(refreshed.contains("rotated-refresh"), "{refreshed}");
     let mut stop = TcpStream::connect(addr).expect("stop fixture");

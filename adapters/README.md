@@ -79,7 +79,7 @@ repository, use local IDs for adapter connections and personal credential links.
 
 ## Authentication adapters
 
-Start from `services/gh/adapter.ts` or `services/resend/adapter.ts`. Import
+Start from `services/resend/adapter.ts`. Import
 `serveAuth`, `authorize`, `openBrowser`, `post`, `Authorization` and
 `AuthHandlers` from `@ryra/adapter/auth`. Zod infers the handlers and validates
 their input and output. `auth-input.schema.json` and `auth-event.schema.json`
