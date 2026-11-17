@@ -37,7 +37,7 @@ views:
         direction: ASC
   - type: list
     name: Projects
-    filters: 'done != true && (done == false || due || priority)'
+    filters: 'done != true && (done == false || due)'
     order: [done, file.name, due, tags]
     groupBy:
       property: formula.project
