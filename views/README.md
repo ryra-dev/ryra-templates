@@ -29,3 +29,5 @@ finished out of its first view.
 
 `bash scripts/catalog.sh` publishes the folders into `catalog.json`. A preview
 is a screenshot of Ryra drawing `view.base` over `sample/`, cropped to the view.
+Take it on a morning early in a month, with `{{today}}` as that day: a month
+calendar shows the first weeks of its month, and a time today is still ahead.
