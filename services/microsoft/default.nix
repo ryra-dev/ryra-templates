@@ -24,7 +24,7 @@ in
   package = pkgs: import ../../adapters/package.nix { inherit pkgs; service = "microsoft"; };
   meta = {
     title = "Microsoft 365";
-    summary = "Outlook, SharePoint and a company directory";
+    summary = "Outlook and SharePoint";
     category = "productivity";
     url = "https://www.microsoft.com/microsoft-365";
     adapters = {
@@ -33,12 +33,6 @@ in
         command = [ "ryra-adapter-microsoft" ];
         connection = "microsoft-files";
         files = { start = "site"; hint = "Choose a SharePoint site your administrator has granted to Ryra."; };
-      };
-      microsoft-directory = {
-        label = "Microsoft 365 directory";
-        command = [ "ryra-adapter-microsoft" ];
-        connection = "microsoft-directory";
-        directory = true;
       };
     };
     auth = {
@@ -79,22 +73,6 @@ in
             scopes = [ "openid" "profile" "email" "offline_access" "https://graph.microsoft.com/Sites.Selected" ];
             scope_aliases."https://graph.microsoft.com/Sites.Selected" = "Sites.Selected";
             omitted_scopes = [ "offline_access" ];
-          };
-        };
-      };
-      microsoft-directory = {
-        label = "Microsoft 365 directory";
-        why = "Review people before inviting them to an organization";
-        inherit environment;
-        settings."/connect/profile/client_id".env = "RYRA_MICROSOFT_DIRECTORY_CLIENT_ID";
-        connect = {
-          kind = "oauth2";
-          profile = profile "organizations" // {
-            client_id = clients.RYRA_MICROSOFT_DIRECTORY_CLIENT_ID;
-            inherit identity;
-            scopes = [ "https://graph.microsoft.com/User.Read" "https://graph.microsoft.com/User.ReadBasic.All" ];
-            scope_aliases = aliases // { "https://graph.microsoft.com/User.ReadBasic.All" = "User.ReadBasic.All"; };
-            persistent = false;
           };
         };
       };

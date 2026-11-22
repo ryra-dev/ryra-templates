@@ -23,9 +23,9 @@ vault a view would otherwise read the whole vault.
 
 Templates use Ryra's own properties for what Ryra reads, as `ryra files
 --property-help` lists them: `due` for a date somebody has to act on, whatever
-its column is called, `done`, `priority`, `assignee` and `tags`. A note reminds
-while it is on its view's first view, so a template with `due` leaves what is
-finished out of its first view.
+its column is called, `done`, `priority`, `assignee` and `tags`. An open note
+can send reminders when it appears on the first supported view at its due time.
+Marking the note done stops its reminders.
 
 `bash scripts/catalog.sh` publishes the folders into `catalog.json`. A preview
 is a screenshot of Ryra drawing `view.base` over `sample/`, cropped to the view.

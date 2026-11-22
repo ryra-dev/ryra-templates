@@ -148,10 +148,8 @@ process.stdout.write = (chunk, ...args) => {{
                 }
             } else if url.contains("/items/file") {
                 response(&mut stream, "200 OK", "", r#"{"id":"file","name":"Report.txt","webUrl":"https://tenant.sharepoint.com/Report.txt","file":{"mimeType":"text/plain"}}"#);
-            } else if url.contains("/users") {
+            } else if url.contains("/drives/drive/root/children") {
                 response(&mut stream, "200 OK", "", r#"{"value":[],"@odata.nextLink":"https://attacker.example/steal"}"#);
-            } else if url.contains("/me") {
-                response(&mut stream, "200 OK", "", r#"{"mail":"me@example.com"}"#);
             } else { response(&mut stream, "403 Forbidden", "", "private-test-token"); }
         }
     });
@@ -163,7 +161,7 @@ process.stdout.write = (chunk, ...args) => {{
     assert!(denied.contains("\"code\":\"denied\""), "{denied}");
     let download = call(&root, &path, "microsoft", r#"{"version":1,"request":{"operation":"files.download","id":{"drive":"drive","item":"file"}}}"#);
     assert!(download.contains("ZG93bmxvYWRlZA=="), "{download}");
-    let foreign = call(&root, &path, "microsoft", r#"{"version":1,"request":{"operation":"directory.read"}}"#);
+    let foreign = call(&root, &path, "microsoft", r#"{"version":1,"request":{"operation":"files.list","location":{"kind":"folder","id":{"drive":"drive","item":"root"}},"next":null}}"#);
     assert!(foreign.contains("\"code\":\"invalid_request\""), "{foreign}");
     let before = seen.lock().expect("seen").len();
     let malformed = call(&root, &path, "google", r#"{"version":2,"request":{"operation":"files.download","id":{"drive":"","item":"../token"}}}"#);

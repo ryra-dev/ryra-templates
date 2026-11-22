@@ -68,29 +68,6 @@ const handlers: Handlers = {
     }
     return { operation: "files.download", name: selected.name, mime: selected.mime, source_url: selected.source_url, data: (await bytes(response, MAX_DOWNLOAD)).toString("base64") };
   },
-  "directory.read": async () => {
-    const Identity = z.object({ mail: z.string().nullable().optional(), userPrincipalName: z.string().optional() });
-    const identity = await json(endpoint("me"), token(), Identity);
-    const signed_in_as = identity.mail || identity.userPrincipalName;
-    if (!signed_in_as) throw new AdapterError("invalid_response");
-    const expected = endpoint("users");
-    expected.search = new URLSearchParams({ "$select": "displayName,mail,userPrincipalName", "$top": "999" }).toString();
-    const Person = Identity.extend({ displayName: z.string().nullable().optional() });
-    const people: { name: string; email: string; active: boolean }[] = [];
-    const seen = new Set<string>();
-    let url = expected;
-    for (let page = 0; page < 100; page++) {
-      const data = await json(url, token(), z.object({ value: z.array(Person), "@odata.nextLink": z.string().optional() }));
-      people.push(...data.value.map((p) => ({ name: p.displayName ?? "", email: p.mail || p.userPrincipalName || "", active: true })));
-      if (people.length > 20000) throw new AdapterError("too_large");
-      const next = data["@odata.nextLink"];
-      if (!next) return { operation: "directory.read", signed_in_as, people };
-      if (seen.has(next)) throw new AdapterError("invalid_response");
-      seen.add(next);
-      url = continuation(expected, next);
-    }
-    throw new AdapterError("too_large");
-  },
 };
 
 await serve(handlers);

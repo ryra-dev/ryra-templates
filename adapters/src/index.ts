@@ -11,7 +11,6 @@ export const Location = z.discriminatedUnion("kind", [
 export const Request = z.discriminatedUnion("operation", [
   z.strictObject({ operation: z.literal("files.list"), location: Location, next: z.string().max(8192).nullable() }),
   z.strictObject({ operation: z.literal("files.download"), id: FileId }),
-  z.strictObject({ operation: z.literal("directory.read") }),
 ]);
 export const Input = z.strictObject({ version: z.literal(1), request: Request });
 const sourceUrl = z.union([z.literal(""), z.url().refine((value) => {
@@ -36,10 +35,6 @@ export const Output = z.discriminatedUnion("operation", [
     operation: z.literal("files.download"), name: z.string().min(1).max(4096),
     mime: z.string().nullable(), source_url: sourceUrl,
     data: z.base64().max(Math.ceil(MAX_DOWNLOAD / 3) * 4),
-  }),
-  z.strictObject({
-    operation: z.literal("directory.read"), signed_in_as: z.string().max(320),
-    people: z.array(z.strictObject({ name: z.string().max(4096), email: z.string().max(320), active: z.boolean() })).max(20000),
   }),
   z.strictObject({ operation: z.literal("error"), code: FailureCode }),
 ]);
@@ -92,12 +87,6 @@ export async function serve(handlers: Handlers): Promise<void> {
         break;
       }
       case "files.download": {
-        const handler = handlers[request.operation];
-        if (!handler) throw new AdapterError("invalid_request");
-        result = await handler(request);
-        break;
-      }
-      case "directory.read": {
         const handler = handlers[request.operation];
         if (!handler) throw new AdapterError("invalid_request");
         result = await handler(request);

@@ -1,8 +1,7 @@
 filters: file.inFolder(this.file.folder)
 formulas:
-  when: 'if(due.date() < today(), "Overdue", "Today")'
+  state: 'if(done == true, "Done", "Open")'
   day: 'if(due.date() < today(), "Overdue", due.date())'
-  project: 'if(file.folder == this.file.folder, "No project", if(this.file.folder, file.folder.slice(this.file.folder.length + 1), file.folder))'
 properties:
   done:
     displayName: Done
@@ -10,17 +9,15 @@ properties:
     displayName: Due
   tags:
     displayName: Tags
-  formula.day:
-    displayName: Day
 views:
   - type: list
-    name: Today
-    filters: 'done != true && due && due.date() <= today()'
+    name: All todos
+    filters: 'done == false || done == true || due'
     order: [done, file.name, due, tags]
     groupBy:
-      property: formula.when
+      property: formula.state
       direction: ASC
-    groupOrder: [Overdue, Today]
+    groupOrder: [Open, Done]
     sort:
       - property: due
         direction: ASC
@@ -35,21 +32,3 @@ views:
     sort:
       - property: due
         direction: ASC
-  - type: list
-    name: Projects
-    filters: 'done != true && (done == false || due)'
-    order: [done, file.name, due, tags]
-    groupBy:
-      property: formula.project
-      direction: ASC
-    groupOrder: [Inbox]
-    sort:
-      - property: due
-        direction: ASC
-  - type: list
-    name: Done
-    filters: 'done == true'
-    order: [done, file.name, tags]
-    sort:
-      - property: due
-        direction: DESC

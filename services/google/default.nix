@@ -27,7 +27,7 @@ in
   package = pkgs: import ../../adapters/package.nix { inherit pkgs; service = "google"; };
   meta = {
     title = "Google Workspace";
-    summary = "Gmail, Calendar, Drive and a company directory";
+    summary = "Gmail, Calendar and Drive";
     category = "productivity";
     url = "https://workspace.google.com";
     adapters = {
@@ -40,12 +40,6 @@ in
           permission = { id = "drive"; choices = [ "selected-files" "read" "write" ]; };
           hint = "Browse Drive with this account's granted access. Google Docs, Sheets and Slides are exported as Word, Excel and PowerPoint files.";
         };
-      };
-      google-directory = {
-        label = "Google Workspace directory";
-        command = [ "ryra-adapter-google" ];
-        connection = "google-directory";
-        directory = true;
       };
     };
     auth = {
@@ -86,20 +80,6 @@ in
                 ];
               }
             ];
-          };
-        };
-      };
-      google-directory = {
-        label = "Google Workspace directory";
-        why = "Review people before inviting them to an organization";
-        settings = registration;
-        environment = { GOOGLE_ACCESS_TOKEN = "access_token"; GOOGLE_ACCOUNT_EMAIL = "account"; };
-        connect = {
-          kind = "oauth2";
-          profile = profile // {
-            parameters = { access_type = "online"; prompt = "consent select_account"; include_granted_scopes = "false"; };
-            scopes = [ "openid" "email" "https://www.googleapis.com/auth/admin.directory.user.readonly" ];
-            persistent = false;
           };
         };
       };

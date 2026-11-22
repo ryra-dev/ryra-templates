@@ -166,51 +166,6 @@
           "properties": {
             "operation": {
               "type": "string",
-              "const": "directory.read"
-            },
-            "signed_in_as": {
-              "type": "string",
-              "maxLength": 320
-            },
-            "people": {
-              "maxItems": 20000,
-              "type": "array",
-              "items": {
-                "type": "object",
-                "properties": {
-                  "name": {
-                    "type": "string",
-                    "maxLength": 4096
-                  },
-                  "email": {
-                    "type": "string",
-                    "maxLength": 320
-                  },
-                  "active": {
-                    "type": "boolean"
-                  }
-                },
-                "required": [
-                  "name",
-                  "email",
-                  "active"
-                ],
-                "additionalProperties": false
-              }
-            }
-          },
-          "required": [
-            "operation",
-            "signed_in_as",
-            "people"
-          ],
-          "additionalProperties": false
-        },
-        {
-          "type": "object",
-          "properties": {
-            "operation": {
-              "type": "string",
               "const": "error"
             },
             "code": {

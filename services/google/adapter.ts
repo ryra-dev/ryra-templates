@@ -71,29 +71,6 @@ const handlers: Handlers = {
     if (!response.ok) { await response.body?.cancel(); throw new AdapterError("invalid_response"); }
     return { operation: "files.download", name: selected.name, mime: selected.mime, source_url: selected.source_url, data: (await bytes(response, MAX_DOWNLOAD)).toString("base64") };
   },
-  "directory.read": async () => {
-    const identity = await json(new URL("https://openidconnect.googleapis.com/v1/userinfo"), token(), z.object({ email: z.string(), email_verified: z.literal(true), hd: z.string().min(1) }));
-    const Person = z.object({
-      primaryEmail: z.string().optional(), name: z.object({ fullName: z.string().optional() }).optional(),
-      suspended: z.boolean().optional(), archived: z.boolean().optional(),
-    });
-    const people: { name: string; email: string; active: boolean }[] = [];
-    const seen = new Set<string>();
-    let next: string | undefined;
-    for (let page = 0; page < 100; page++) {
-      const url = new URL("https://admin.googleapis.com/admin/directory/v1/users");
-      url.search = new URLSearchParams({ customer: "my_customer", maxResults: "500", projection: "basic", viewType: "admin_view" }).toString();
-      if (next) url.searchParams.set("pageToken", next);
-      const data = await json(url, token(), z.object({ users: z.array(Person).optional(), nextPageToken: z.string().max(8192).optional() }));
-      people.push(...(data.users ?? []).map((p) => ({ name: p.name?.fullName ?? "", email: p.primaryEmail ?? "", active: !p.suspended && !p.archived })));
-      if (people.length > 20000) throw new AdapterError("too_large");
-      next = data.nextPageToken;
-      if (!next) return { operation: "directory.read", signed_in_as: identity.email, people };
-      if (seen.has(next)) throw new AdapterError("invalid_response");
-      seen.add(next);
-    }
-    throw new AdapterError("too_large");
-  },
 };
 
 await serve(handlers);

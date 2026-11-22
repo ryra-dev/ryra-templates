@@ -134,19 +134,6 @@
             "id"
           ],
           "additionalProperties": false
-        },
-        {
-          "type": "object",
-          "properties": {
-            "operation": {
-              "type": "string",
-              "const": "directory.read"
-            }
-          },
-          "required": [
-            "operation"
-          ],
-          "additionalProperties": false
         }
       ]
     }
