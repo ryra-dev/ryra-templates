@@ -1,6 +1,5 @@
 filters: file.inFolder(this.file.folder)
 formulas:
-  state: 'if(done == true, "Done", "Open")'
   day: 'if(due.date() < today(), "Overdue", due.date())'
 properties:
   done:
@@ -11,16 +10,16 @@ properties:
     displayName: Tags
 views:
   - type: list
-    name: All todos
-    filters: 'done == false || done == true || due'
+    name: Open
+    filters: 'done == false || (done != true && due)'
     order: [done, file.name, due, tags]
-    groupBy:
-      property: formula.state
-      direction: ASC
-    groupOrder: [Open, Done]
     sort:
       - property: due
         direction: ASC
+  - type: list
+    name: Done
+    filters: 'done == true'
+    order: [done, file.name, due, tags]
   - type: list
     name: Upcoming
     filters: 'done != true && due'
