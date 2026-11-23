@@ -2,18 +2,18 @@
 # Published archives must remain available for machines pinned to them.
 { lib, pkgs, ... }:
 let
-  version = "0.1.114";
+  version = "0.1.115";
 
   # Published target triples. Keyed by system so one file serves both
   # templates rather than two copies drifting apart.
   published = {
     "x86_64-linux" = {
       arch = "x86_64-unknown-linux-musl";
-      sha256 = "d48410ab8acfdc27738798bd4f50ebd4a5546bce3a74fa9ac0c133bda4f67054";
+      sha256 = "8ffa777cb8e9765a795a5a063edfcde0a009c16aac997175d44b20df0ea1acd4";
     };
     "aarch64-linux" = {
       arch = "aarch64-unknown-linux-musl";
-      sha256 = "984494fafafca486ad8ca8d869f6e0b9b15df744bf97248c81fa8c3d9c37a936";
+      sha256 = "ba9cfb4206adeac6f80318d0eec9fb550bbb4b6d370d00d072c9f6968ab4eee6";
     };
   };
   package = published.${pkgs.stdenv.hostPlatform.system};
