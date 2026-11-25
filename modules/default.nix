@@ -14,6 +14,7 @@
     ./resources.nix
     ./ryra-cli.nix
     ./services.nix
+    ./sessions.nix
     ./shared-folders.nix
     ./tailscale.nix
     ./updates.nix
