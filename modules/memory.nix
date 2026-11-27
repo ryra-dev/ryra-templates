@@ -80,7 +80,7 @@
       "--prefer"
       "^(chrome|chromium|firefox|electron)$"
       "--avoid"
-      "^(systemd|sshd|dbus-daemon|herdr|tailscaled)$"
+      "^(systemd|sshd|sshd-session|sshd-auth|dbus-daemon|herdr|tailscaled)$"
     ];
   };
 }
